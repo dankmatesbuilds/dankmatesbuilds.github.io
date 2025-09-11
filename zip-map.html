@@ -11,7 +11,7 @@
         });
 
         // Load GeoJSON
-        map.data.loadGeoJson('zipcodes.geojson');
+        map.data.loadGeoJson('zip-map.json');
 
         // Style polygons
         map.data.setStyle({
@@ -23,7 +23,7 @@
 
         // Add click event
         map.data.addListener('click', function(event) {
-          const zip = event.feature.getProperty('ZCTA5CE10'); // adjust based on your GeoJSON property name
+          const zip = event.feature.getProperty('ZCTA5CE20'); // adjust based on your GeoJSON property name
           new google.maps.InfoWindow({
             content: `ZIP Code: ${zip}`,
             position: event.latLng,
