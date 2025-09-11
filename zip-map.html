@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Zip Code Map</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8"></script>
+    <script>
+      function initMap() {
+        const map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 10,
+          center: { lat: 39.9526, lng: -75.1652 }, // Example: Philadelphia
+        });
+
+        // Load GeoJSON
+        map.data.loadGeoJson('zipcodes.geojson');
+
+        // Style polygons
+        map.data.setStyle({
+          fillColor: 'blue',
+          fillOpacity: 0.2,
+          strokeColor: 'black',
+          strokeWeight: 1
+        });
+
+        // Add click event
+        map.data.addListener('click', function(event) {
+          const zip = event.feature.getProperty('ZCTA5CE10'); // adjust based on your GeoJSON property name
+          new google.maps.InfoWindow({
+            content: `ZIP Code: ${zip}`,
+            position: event.latLng,
+          }).open(map);
+        });
+      }
+    </script>
+    <style>
+      #map { height: 100vh; width: 100%; }
+    </style>
+  </head>
+  <body onload="initMap()">
+    <div id="map"></div>
+  </body>
+</html>
