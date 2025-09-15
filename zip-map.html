@@ -1,41 +1,91 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>Zip Code Map</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8"></script>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      #map { height: 100%; width: 100%; }
+    </style>
     <script>
+      /** 1) Groups, colors, and ZIP lists */
+      const ZIP_GROUPS = [
+        { name: "Philly Core", color: "#1f77b4",
+          zips: ["19102","19103","19104","19106","19107","19123","19130","19146","19147"] },
+        { name: "North/Northeast", color: "#ff7f0e",
+          zips: ["19111","19114","19115","19116","19124","19135","19136","19149","19152","19154"] },
+        { name: "West/Southwest", color: "#2ca02c",
+          zips: ["19131","19139","19143","19151","19153","19142"] },
+        { name: "NW / Rox / Chestnut Hill", color: "#d62728",
+          zips: ["19118","19119","19128","19129","19144","19150"] },
+      ];
+
+      /** Fast lookup: ZIP -> {color, name} */
+      const ZIP_STYLE = (() => {
+        const m = new Map();
+        ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, name: g.name })));
+        return m;
+      })();
+
+      /** 2) initMap (global so the loader can call it) */
       function initMap() {
         const map = new google.maps.Map(document.getElementById("map"), {
           zoom: 10,
-          center: { lat: 39.9526, lng: -75.1652 }, // Example: Philadelphia
+          center: { lat: 39.9526, lng: -75.1652 } // Philadelphia
         });
 
         // Load GeoJSON
-        map.data.loadGeoJson('zip-map.json');
-
-        // Style polygons
-        map.data.setStyle({
-          fillColor: 'blue',
-          fillOpacity: 0.2,
-          strokeColor: 'black',
-          strokeWeight: 1
+        map.data.loadGeoJson('zip-map.json', null, () => {
+          // Style polygons by group color
+          map.data.setStyle(feature => {
+            const zip = feature.getProperty('ZCTA5CE20')
+                      || feature.getProperty('ZCTA5CE10')
+                      || feature.getProperty('GEOID');
+            const style = ZIP_STYLE.get(String(zip));
+            return {
+              fillColor: style ? style.color : '#999999',
+              fillOpacity: 0.25,
+              strokeColor: style ? style.color : '#666666',
+              strokeWeight: 1
+            };
+          });
         });
 
-        // Add click event
-        map.data.addListener('click', function(event) {
-          const zip = event.feature.getProperty('ZCTA5CE20'); // adjust based on your GeoJSON property name
-          new google.maps.InfoWindow({
-            content: `ZIP Code: ${zip}`,
-            position: event.latLng,
-          }).open(map);
+        // Click popup: ZIP + Group name
+        const info = new google.maps.InfoWindow();
+        map.data.addListener('click', (e) => {
+          const zip = e.feature.getProperty('ZCTA5CE20')
+                    || e.feature.getProperty('ZCTA5CE10')
+                    || e.feature.getProperty('GEOID');
+          const group = ZIP_STYLE.get(String(zip))?.name || 'Ungrouped';
+          info.setContent(`<div><b>ZIP:</b> ${zip}<br/><b>Group:</b> ${group}</div>`);
+          info.setPosition(e.latLng);
+          info.open(map);
         });
+
+        // 3) Legend (top-right)
+        const legend = document.createElement('div');
+        legend.style.background = '#fff';
+        legend.style.margin = '10px';
+        legend.style.padding = '8px 10px';
+        legend.style.borderRadius = '8px';
+        legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+        legend.innerHTML = '<b>Service Areas</b><br/>' +
+          ZIP_GROUPS.map(g => `
+            <div style="display:flex;align-items:center;margin:4px 0;">
+              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
+              ${g.name}
+            </div>`).join('');
+        map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
       }
     </script>
-    <style>
-      #map { height: 100vh; width: 100%; }
-    </style>
+
+    <!-- 4) Modern Google Maps loader (no onload on <body>) -->
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&loading=async">
+    </script>
   </head>
-  <body onload="initMap()">
+  <body>
     <div id="map"></div>
   </body>
 </html>
