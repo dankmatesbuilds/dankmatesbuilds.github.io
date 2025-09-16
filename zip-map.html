@@ -4,14 +4,75 @@
     <meta charset="utf-8" />
     <title>Dankmates Delivery Zones</title>
     <style>
-      html, body { height: 100%; margin: 0; }
-      #map { height: 100%; width: 100%; }
-      #search {
-        position: absolute; z-index: 5; top: 12px; left: 12px;
-        width: 320px; padding: 10px 12px; border-radius: 8px;
-        border: 1px solid #ccc; box-shadow: 0 1px 4px rgba(0,0,0,.15);
-        font-size: 14px;
-      }
+:root{
+  --bg: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --brand: #2563eb;      /* accent */
+  --ring: rgba(37, 99, 235, .25);
+  --shadow: 0 8px 24px rgba(0,0,0,.12);
+  --radius: 14px;
+}
+
+/* Map fills the page */
+html, body { height:100%; margin:0; }
+#map { height:100%; width:100%; }
+
+/* ---- Search ---- */
+#searchWrap{
+  position:absolute; z-index:5; top:16px; left:16px;
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg); color:var(--text);
+  border-radius: var(--radius);
+  padding:10px 12px; box-shadow: var(--shadow);
+  border:1px solid #e5e7eb;
+}
+#searchWrap .icon{
+  width:18px; height:18px; fill:var(--muted);
+}
+#search{
+  width:320px; max-width:62vw;
+  border:none; outline:none; font-size:14px; color:var(--text);
+}
+#search::placeholder{ color:#9ca3af; }
+#searchWrap:focus-within{
+  box-shadow: var(--shadow), 0 0 0 4px var(--ring);
+  border-color:#d1d5db;
+}
+#clearBtn{
+  appearance:none; border:none; background:#f3f4f6; color:#6b7280;
+  width:26px; height:26px; border-radius:8px; cursor:pointer;
+}
+#clearBtn:hover{ background:#e5e7eb; }
+
+/* ---- Pretty popup (we style the *content* inside the InfoWindow) ---- */
+.dm-popup{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  min-width: 240px; max-width: 320px;
+  color: var(--text);
+}
+.dm-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 12px;
+  background: linear-gradient(135deg, #111827, #374151);
+  color:#fff; border-radius:12px 12px 0 0;
+}
+.dm-fee{
+  background:#fff; color:#111827; font-weight:700;
+  padding:2px 8px; border-radius:999px; font-size:12px;
+}
+.dm-body{
+  padding:12px; background:#fff; border-radius:0 0 12px 12px; border:1px solid #e5e7eb; border-top:none;
+}
+.dm-row{ display:flex; gap:8px; margin:6px 0; font-size:14px; }
+.dm-label{ width:76px; color:var(--muted); }
+.dm-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:2px 8px; border-radius:999px; border:1px solid #e5e7eb; background:#f9fafb;
+  font-size:12px;
+}
+.dm-dot{ width:10px; height:10px; border-radius:999px; display:inline-block; }
+      
     </style>
 
     <script>
@@ -86,6 +147,24 @@ let lastHighlighted = null;
 let marker = null;
 let info = null;
 
+function popupHTML({address, zip, groupName, fee, color}){
+  return `
+    <div class="dm-popup">
+      <div class="dm-head">
+        <div>${address ? address : 'Delivery Zone'}</div>
+        <div class="dm-fee">$${fee}</div>
+      </div>
+      <div class="dm-body">
+        ${address ? `<div class="dm-row"><div class="dm-label">Address</div><div>${address}</div></div>` : ''}
+        <div class="dm-row"><div class="dm-label">ZIP</div><div>${zip}</div></div>
+        <div class="dm-row">
+          <div class="dm-label">Zone</div>
+          <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${groupName}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
 function initMap() {
   const map = new google.maps.Map(document.getElementById("map"), {
     zoom: 10,
@@ -121,14 +200,19 @@ function initMap() {
 
   // Click → popup with ZIP + group + fee
   map.data.addListener('click', (e) => {
-    const zip = getZipFromFeature(e.feature);
-    const s = ZIP_STYLE.get(String(zip));
-    const groupName = s?.name || "Ungrouped";
-    const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
-    info.setContent(`<div><b>ZIP:</b> ${zip}<br/><b>Group:</b> ${groupName}<br/><b>Delivery fee:</b> $${fee}</div>`);
-    info.setPosition(e.latLng);
-    info.open(map);
-  });
+  const zip = getZipFromFeature(e.feature);
+  const s = ZIP_STYLE.get(String(zip));
+  const groupName = s?.name || "Ungrouped";
+  const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
+  info.setContent(popupHTML({
+    address: null,
+    zip, groupName, fee,
+    color: s?.color || '#999'
+  }));
+  info.setPosition(e.latLng);
+  info.open(map);
+});
+
 
   // Legend (shows fees)
   const legend = document.createElement('div');
@@ -159,6 +243,13 @@ const ac = new google.maps.places.Autocomplete(document.getElementById('search')
   types: ['address'],                          // <- force street addresses
   componentRestrictions: { country: ['us'] }
 });
+
+  document.getElementById('clearBtn').addEventListener('click', () => {
+  const input = document.getElementById('search');
+  input.value = '';
+  input.focus();
+});
+
 
 const geocoder = new google.maps.Geocoder();
 
@@ -217,15 +308,13 @@ ac.addListener('place_changed', async () => {
     const groupName = s?.name || 'Ungrouped';
     const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
 
-    info.setContent(
-      `<div style="min-width:220px">
-         <div><b>Address:</b> ${place.formatted_address || '—'}</div>
-         <div><b>ZIP:</b> ${zip}</div>
-         <div><b>Group:</b> ${groupName}</div>
-         <div><b>Delivery fee:</b> $${fee}</div>
-       </div>`
-    );
-    info.open({ map, position: location });
+    info.setContent(popupHTML({
+  address: place.formatted_address || '—',
+  zip, groupName, fee,
+  color: s?.color || '#999'
+}));
+info.open({ map, position: location });
+
   } else {
     clearHighlight(map);
     info.setContent(`<div><b>Address:</b> ${place.formatted_address || '—'}<br/>Not in a mapped ZIP.</div>`);
