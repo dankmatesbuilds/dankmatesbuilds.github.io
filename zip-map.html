@@ -49,14 +49,19 @@
     display: flex; justify-content: center; align-items: center;
   }
   #dm-header-inner{
-    height: 100%;
-    width: min(94%, 1200px);
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  }
-  /* Inline SVG logo sizing & color */
-  #dm-logo{ display:flex; align-items:center; }
-  #dm-logo svg, #dm-logo img{
-    height: 44px; width: auto; display:block;
+  height: 100%;
+  width: min(94%, 1200px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* keep logo + search grouped */
+  gap: 24px; /* space between logo and search */
+}
+
+#dm-logo svg, #dm-logo img {
+  height: 36px; /* slightly smaller than before (was 44px) */
+  width: auto;
+  display: block;
+}
   }
   /* If you want logo forced to white on the dark header, keep this: */
   #dm-logo svg path{ fill:#fff; }
@@ -67,7 +72,7 @@
     background:#fff; color:#111827;
     border-radius:12px; padding:8px 10px;
     border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
-    width: 360px; max-width: 60vw;
+    width: 320px; max-width: 50vw;
     margin: 0; /* no external margin in header */
   }
   #searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
@@ -611,16 +616,6 @@ function centerOfFeature(feature){
     </div>
   </div>
 </header>
-
-    
-    <!-- Search control (placed in TOP_LEFT by initMap) -->
-    <div id="searchWrap">
-      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
-      </svg>
-      <input id="search" type="text" placeholder="Search an address (Philly + South NJ)" />
-      <button id="clearBtn" title="Clear">✕</button>
-    </div>
 
     <div id="map"></div>
   </body>
