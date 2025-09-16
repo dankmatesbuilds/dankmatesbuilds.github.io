@@ -25,18 +25,22 @@
     <script>
       /***************
        * 1) EDIT THESE GROUPS
-       * - Change names, colors, and ZIP arrays to match your delivery zones.
+       * - Change names, colors, fees, and ZIP arrays to match your delivery zones.
        * - Any ZIP not listed in any group will be styled gray by default.
+       * - Fees are distance/difficulty tiers from City Hall: 0, 6, 10, 15, 20
        ***************/
       const ZIP_GROUPS = [
-        { name: "Philly Core", color: "#1f77b4",
+        { name: "Philly Core",              color: "#1f77b4", fee: 0,   // ADDED fee
           zips: ["19102","19103","19104","19106","19107","19123","19130","19146","19147"] },
-        { name: "North/Northeast", color: "#ff7f0e",
-          zips: ["19111","19114","19115","19116","19124","19135","19136","19149","19152","19154"] },
-        { name: "West/Southwest", color: "#2ca02c",
+
+        { name: "West/Southwest",           color: "#2ca02c", fee: 6,   // ADDED fee
           zips: ["19131","19139","19143","19151","19153","19142"] },
-        { name: "NW / Rox / Chestnut Hill", color: "#d62728",
+
+        { name: "NW / Rox / Chestnut Hill", color: "#d62728", fee: 15,  // ADDED fee
           zips: ["19118","19119","19128","19129","19144","19150"] },
+
+        { name: "North/Northeast",          color: "#ff7f0e", fee: 20,  // ADDED fee (includes Far NE)
+          zips: ["19111","19114","19115","19116","19124","19135","19136","19149","19152","19154"] },
       ];
 
       /** Fast lookup: ZIP -> {color, name} (don’t edit) */
@@ -52,7 +56,7 @@
       let info = null;
 
       /***************
-       * 2) INIT THE MAP (no edits needed here)
+       * 2) INIT THE MAP
        ***************/
       function initMap() {
         const map = new google.maps.Map(document.getElementById("map"), {
@@ -67,32 +71,50 @@
          * If you rename your data file, change 'zip-map.json' here.
          ***************/
         map.data.loadGeoJson('zip-map.json', null, () => {
-          // Color polygons by group
+          // Color polygons by group (+ optional opacity by fee)
           map.data.setStyle(feature => {
             const zip = feature.getProperty('ZCTA5CE20')
                       || feature.getProperty('ZCTA5CE10')
                       || feature.getProperty('GEOID');
             const s = ZIP_STYLE.get(String(zip));
+            const groupObj = ZIP_GROUPS.find(g => g.name === (s?.name));
+            const fee = groupObj?.fee ?? 0;
+
+            // ADDED: slightly higher opacity for higher fee tiers (optional visual cue)
+            const opacity = fee >= 20 ? 0.45 : fee >= 15 ? 0.35 : fee >= 10 ? 0.30 : fee >= 6 ? 0.28 : 0.25;
+
             return {
               fillColor: s ? s.color : '#999999',
-              fillOpacity: 0.25,
+              fillOpacity: opacity,
               strokeColor: s ? s.color : '#666666',
               strokeWeight: 1
             };
           });
         });
 
-        // Click: show ZIP + group at clicked location
+        // Click: show ZIP + group + fee at clicked location (UPDATED)
         map.data.addListener('click', (e) => {
           const zip = getZipFromFeature(e.feature);
-          const group = ZIP_STYLE.get(String(zip))?.name || 'Ungrouped';
-          info.setContent(`<div><b>ZIP:</b> ${zip}<br/><b>Group:</b> ${group}</div>`);
+          const s   = ZIP_STYLE.get(String(zip));
+          const groupName = s?.name || 'Ungrouped';
+          const fee = (() => {
+            const g = ZIP_GROUPS.find(x => x.name === groupName);
+            return (g?.fee ?? 0);
+          })();
+
+          info.setContent(
+            `<div>
+               <b>ZIP:</b> ${zip}<br/>
+               <b>Group:</b> ${groupName}<br/>
+               <b>Delivery fee:</b> $${fee}
+             </div>`
+          );
           info.setPosition(e.latLng);
           info.open(map);
         });
 
         /***************
-         * 4) LEGEND (auto-built from ZIP_GROUPS)
+         * 4) LEGEND (auto-built from ZIP_GROUPS) — UPDATED to show fees
          ***************/
         const legend = document.createElement('div');
         legend.style.background = '#fff';
@@ -104,7 +126,7 @@
           ZIP_GROUPS.map(g => `
             <div style="display:flex;align-items:center;margin:4px 0;">
               <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
-              ${g.name}
+              ${g.name} <span style="color:#555">&nbsp;($${g.fee})</span>
             </div>`).join('');
         map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
 
@@ -114,21 +136,22 @@
          * - We also use the geometry library for point-in-polygon test
          ***************/
         const input = document.getElementById('search');
+
         // Covers Philly, Delco, Montco, Bucks, Chester, Camden, Gloucester, Burlington, Atlantic, Salem
-const phillySJBounds = new google.maps.LatLngBounds(
-  // SW corner: just below Salem County & Chester County
-  { lat: 39.35, lng: -75.85 },
-  // NE corner: above Bucks County and Burlington County, east to Atlantic City area
-  { lat: 40.40, lng: -74.20 }
-);
+        const phillySJBounds = new google.maps.LatLngBounds(
+          // SW corner: just below Salem County & Chester County
+          { lat: 39.35, lng: -75.85 },
+          // NE corner: above Bucks County and Burlington County, east to Atlantic City area
+          { lat: 40.40, lng: -74.20 }
+        );
 
-const ac = new google.maps.places.Autocomplete(document.getElementById('search'), {
-  fields: ['geometry', 'formatted_address'],
-  bounds: phillySJBounds,
-  strictBounds: false, // bias but still allow results outside the box
-  componentRestrictions: { country: ['us'] }
-});
-
+        const ac = new google.maps.places.Autocomplete(document.getElementById('search'), {
+          fields: ['geometry', 'formatted_address'],
+          bounds: phillySJBounds,
+          strictBounds: false,           // bias but still allow results outside the box
+          // types: ['address'],         // OPTIONAL: uncomment to only suggest street addresses
+          componentRestrictions: { country: ['us'] }
+        });
 
         ac.addListener('place_changed', () => {
           const place = ac.getPlace();
@@ -148,12 +171,19 @@ const ac = new google.maps.places.Autocomplete(document.getElementById('search')
           if (containing) {
             highlightFeature(map, containing);
             const zip = getZipFromFeature(containing);
-            const group = ZIP_STYLE.get(String(zip))?.name || 'Ungrouped';
+            const s   = ZIP_STYLE.get(String(zip));
+            const groupName = s?.name || 'Ungrouped';
+            const fee = (() => {
+              const g = ZIP_GROUPS.find(x => x.name === groupName);
+              return (g?.fee ?? 0);
+            })();
+
             info.setContent(
               `<div style="min-width:220px">
                  <div><b>Address:</b> ${place.formatted_address || '—'}</div>
                  <div><b>ZIP:</b> ${zip}</div>
-                 <div><b>Group:</b> ${group}</div>
+                 <div><b>Group:</b> ${groupName}</div>
+                 <div><b>Delivery fee:</b> $${fee}</div>
                </div>`
             );
             info.open({ map, position: latLng });
@@ -237,17 +267,17 @@ const ac = new google.maps.places.Autocomplete(document.getElementById('search')
     </script>
 
     <!-- 6) MODERN LOADER
-         - Replace YOUR_API_KEY with your real key
-         - Make sure Places API is enabled
-         - Add libraries=places,geometry for search + point-in-polygon
-         - Remove any onload="initMap()" from <body> -->
+         - Replace YOUR_API_KEY if needed with your working key
+         - Ensure Places API is enabled
+         - libraries=places,geometry for search + point-in-polygon
+         - No onload attribute on <body> -->
     <script async defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
     </script>
   </head>
 
   <body>
-    <!-- 7) SEARCH INPUT (you can rename placeholder text) -->
+    <!-- 7) SEARCH INPUT (rename placeholder text if you like) -->
     <input id="search" type="text" placeholder="Search address…" />
     <div id="map"></div>
   </body>
