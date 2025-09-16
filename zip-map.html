@@ -146,58 +146,93 @@ function initMap() {
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
 
   // --- Search bias: Philly + South NJ counties ---
-  const phillySJBounds = new google.maps.LatLngBounds(
-    { lat: 39.35, lng: -75.85 }, // SW (below Salem/Chester)
-    { lat: 40.40, lng: -74.20 }  // NE (above Bucks / toward AC)
-  );
+const phillySJBounds = new google.maps.LatLngBounds(
+  { lat: 39.35, lng: -75.85 }, // SW
+  { lat: 40.40, lng: -74.20 }  // NE
+);
 
-  const input = document.getElementById('search');
-  const ac = new google.maps.places.Autocomplete(input, {
-    fields: ['geometry', 'formatted_address'],
-    bounds: phillySJBounds,
-    strictBounds: false,
-    // types: ['address'], // ← uncomment to restrict suggestions to street addresses only
-    componentRestrictions: { country: ['us'] }
-  });
+// New: include address_components & place_id so we can verify/repair results
+const ac = new google.maps.places.Autocomplete(document.getElementById('search'), {
+  fields: ['geometry','formatted_address','address_components','place_id'],
+  bounds: phillySJBounds,
+  strictBounds: false,
+  types: ['address'],                          // <- force street addresses
+  componentRestrictions: { country: ['us'] }
+});
 
-  ac.addListener('place_changed', () => {
-    const place = ac.getPlace();
-    if (!place.geometry || !place.geometry.location) return;
+const geocoder = new google.maps.Geocoder();
 
-    const latLng = place.geometry.location;
-    if (!marker) marker = new google.maps.Marker({ map, position: latLng });
-    else marker.setPosition(latLng);
 
-    map.panTo(latLng);
-    map.setZoom(13);
+ac.addListener('place_changed', async () => {
+  const place = ac.getPlace();
 
-    const containing = findContainingFeature(map, latLng);
-    if (containing) {
-      highlightFeature(map, containing);
-      const zip = getZipFromFeature(containing);
-      const s = ZIP_STYLE.get(String(zip));
-      const groupName = s?.name || "Ungrouped";
-      const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
+  // If Places returned something odd (no geometry or not an address), geocode the raw input.
+  let location = place?.geometry?.location || null;
+  const isStreetAddress = (place.address_components || [])
+    .some(c => c.types.includes('street_number'));
 
-      info.setContent(
-        `<div style="min-width:220px">
-           <div><b>Address:</b> ${place.formatted_address || '—'}</div>
-           <div><b>ZIP:</b> ${zip}</div>
-           <div><b>Group:</b> ${groupName}</div>
-           <div><b>Delivery fee:</b> $${fee}</div>
-         </div>`
-      );
-      info.open({ map, position: latLng });
-
-      const b = getFeatureBounds(containing);
-      if (b) map.fitBounds(b);
-    } else {
-      clearHighlight(map);
-      info.setContent(`<div><b>Address:</b> ${place.formatted_address || '—'}<br/>Not in a mapped ZIP.</div>`);
-      info.open({ map, position: latLng });
+  if (!location || !isStreetAddress) {
+    try {
+      const q = document.getElementById('search').value.trim();
+      const { results } = await geocoder.geocode({
+        address: q,
+        bounds: phillySJBounds,
+        componentRestrictions: { country: 'US' }
+      });
+      if (results && results[0]?.geometry?.location) {
+        location = results[0].geometry.location;
+      }
+    } catch (e) {
+      // swallow; we’ll just bail if we still have no location
     }
-  });
-}
+  }
+  if (!location) return;
+
+  // Drop or move the marker at the resolved address
+  if (!marker) marker = new google.maps.Marker({ map, position: location });
+  else marker.setPosition(location);
+
+  // Prefer Google’s viewport for the address; otherwise zoom to the point
+  if (place?.geometry?.viewport) {
+    map.fitBounds(place.geometry.viewport);
+  } else {
+    map.setCenter(location);
+    map.setZoom(17);
+  }
+
+  // Find the containing ZIP polygon
+  const containing = findContainingFeature(map, location);
+  if (containing) {
+    highlightFeature(map, containing);
+
+    // Build a union of the ZIP bounds + the marker point so we don’t fly away from the pin
+    const zipBounds = getFeatureBounds(containing);
+    if (zipBounds) {
+      zipBounds.extend(location);                // keep address in view
+      map.fitBounds(zipBounds, { top: 80, left: 20, bottom: 20, right: 20 }); // padding
+    }
+
+    const zip = getZipFromFeature(containing);
+    const s = ZIP_STYLE.get(String(zip));
+    const groupName = s?.name || 'Ungrouped';
+    const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
+
+    info.setContent(
+      `<div style="min-width:220px">
+         <div><b>Address:</b> ${place.formatted_address || '—'}</div>
+         <div><b>ZIP:</b> ${zip}</div>
+         <div><b>Group:</b> ${groupName}</div>
+         <div><b>Delivery fee:</b> $${fee}</div>
+       </div>`
+    );
+    info.open({ map, position: location });
+  } else {
+    clearHighlight(map);
+    info.setContent(`<div><b>Address:</b> ${place.formatted_address || '—'}<br/>Not in a mapped ZIP.</div>`);
+    info.open({ map, position: location });
+  }
+});
+
 
 /* Helpers */
 function getZipFromFeature(feature) {
