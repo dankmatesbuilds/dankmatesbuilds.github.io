@@ -195,19 +195,27 @@ let info = null;
 let hoverLabelMarker = null;   // label-only marker for hover
 let activeLegend = null;       // legend spotlight filter
 
-function initMap() {
-  console.log("initMap: starting"); 
-  const map = new google.maps.Map(document.getElementById("map"), {
-    zoom: 10,
-    center: { lat: 39.9526, lng: -75.1652 }
-  });
+function initMap(){
+  console.log('initMap: starting (minimal)');
 
-  // Map/Satellite control and search placement
-  map.setOptions({
+  const mapEl = document.getElementById('map');
+  // Visual check that the element is actually on the page and sized
+  console.log('mapEl size:', mapEl?.offsetWidth, mapEl?.offsetHeight);
+
+  const map = new google.maps.Map(mapEl, {
+    center: { lat: 39.9526, lng: -75.1652 }, // Philly
+    zoom: 12,
     mapTypeControl: true,
-    mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT }
+    streetViewControl: false,
+    fullscreenControl: true
   });
 
+  // Log when tiles arrive
+  google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
+    console.log('tilesloaded: base map visible');
+  });
+}
+window.initMap = initMap;
   info = new google.maps.InfoWindow();
 
   // ---- Data styling with spotlight support ----
@@ -535,7 +543,7 @@ function centerOfFeature(feature){
 
     <!-- Loader: Maps + Places + Geometry -->
     <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&libraries=places,geometry&v=weekly"
     </script>
   </head>
 
