@@ -38,63 +38,63 @@
   html,body{height:100%;margin:0;}
   body{font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
 
-  /* ---------------- Header with Logo + Search ---------------- */
-  #dm-header{
-    position: fixed; top: 0; left: 0; right: 0;
-    height: 80px;
-    background: #111827;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    z-index: 1000;
-    display: flex; justify-content: center; align-items: center;
-  }
-  #dm-header-inner{
+/* ---------------- Header with Logo + Search ---------------- */
+#dm-header{
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 80px;
+  background: #CD0029;                 /* red brand color */
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  display: flex; justify-content: flex-start; align-items: center; /* anchor content left */
+}
+
+/* full width container, anchored left with comfortable padding */
+#dm-header-inner{
   height: 100%;
-  width: min(94%, 1200px);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* keep logo + search grouped */
-  gap: 24px; /* space between logo and search */
+  width: 100%;
+  padding: 0 16px;                      /* left/right breathing room */
+  display: flex; align-items: center; justify-content: flex-start;
+  gap: 24px;                            /* space between logo and search */
 }
 
-#dm-logo svg, #dm-logo img {
-  height: 36px; /* slightly smaller than before (was 44px) */
-  width: auto;
-  display: block;
+/* Inline SVG logo sizing & color */
+#dm-logo{ display:flex; align-items:center; }
+#dm-logo svg, #dm-logo img{
+  height: 32px;                         /* smaller logo */
+  width: auto; display:block;
 }
-  }
-  /* If you want logo forced to white on the dark header, keep this: */
-  #dm-logo svg path{ fill:#fff; }
+#dm-logo svg path{ fill:#fff; }         /* keep logo white on red */
 
-  /* ---------------- Search embedded in header ---------------- */
-  #searchWrap{
-    display:flex; align-items:center; gap:8px;
-    background:#fff; color:#111827;
-    border-radius:12px; padding:8px 10px;
-    border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
-    width: 320px; max-width: 50vw;
-    margin: 0; /* no external margin in header */
-  }
-  #searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
-  #search{
-    flex:1; border:none; outline:none;
-    font-size:14px; color:var(--text); background:transparent;
-  }
-  #search::placeholder{color:#9ca3af;}
-  #searchWrap:focus-within{box-shadow:0 0 0 4px var(--ring), 0 2px 4px rgba(0,0,0,.08); border-color:#d1d5db;}
-  #clearBtn{
-    appearance:none;border:none;background:#f3f4f6;color:#6b7280;
-    width:26px;height:26px;border-radius:8px;cursor:pointer;line-height:26px;text-align:center;font-size:14px;
-  }
-  #clearBtn:hover{background:#e5e7eb;}
+/* ---------------- Search embedded in header ---------------- */
+#searchWrap{
+  display:flex; align-items:center; gap:8px;
+  background:#fff; color:#111827;
+  border-radius:12px; padding:8px 10px;
+  border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
+  width: 320px; max-width: 50vw;
+  margin: 0;                            /* no external margin in header */
+}
+#searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
+#search{
+  flex:1; border:none; outline:none;
+  font-size:14px; color:var(--text); background:transparent;
+}
+#search::placeholder{color:#9ca3af;}
+#searchWrap:focus-within{box-shadow:0 0 0 4px var(--ring), 0 2px 4px rgba(0,0,0,.08); border-color:#d1d5db;}
+#clearBtn{
+  appearance:none;border:none;background:#f3f4f6;color:#6b7280;
+  width:26px;height:26px;border-radius:8px;cursor:pointer;line-height:26px;text-align:center;font-size:14px;
+}
+#clearBtn:hover{background:#e5e7eb;}
 
-  /* ---------------- Map below header ---------------- */
-  #map{
-    position: fixed;
-    top: 80px;  /* match header height */
-    left: 0; right: 0; bottom: 0;
-    width: 100%;
-  }
+/* ---------------- Map below header ---------------- */
+#map{
+  position: fixed;
+  top: 80px;                            /* must match #dm-header height */
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+}
 
   /* ---------------- Popup styled like your screenshot ---------------- */
   .dm-popup{
@@ -146,12 +146,12 @@
   .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
 
   /* ---------------- Responsive ---------------- */
-  @media (max-width: 640px){
-    #dm-header{ height: 120px; }
-    #dm-header-inner{ flex-direction: column; justify-content: center; }
-    #map{ top: 120px; }
-    #searchWrap{ width: 100%; max-width: none; }
-  }
+@media (max-width: 640px){
+  #dm-header{ height: 120px; }
+  #map{ top: 120px; }
+  #dm-header-inner{ flex-direction: column; align-items: flex-start; gap: 12px; }
+  #searchWrap{ width: 100%; max-width: none; }
+}
 </style>
 
     <script>
