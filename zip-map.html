@@ -443,7 +443,7 @@ map.panTo(location);
 map.setZoom(17);
 
 
-   const containing = findContainingFeature(map, location);
+    const containing = findContainingFeature(map, location);
 if (containing) {
   // Highlight polygon exactly as a click would
   highlightFeature(map, containing);
@@ -479,6 +479,19 @@ if (containing) {
   info.open(map);
 }
 
+    else {
+      clearHighlight(map);
+      info.setContent(popupHTML({
+        zip: '—',
+        label: 'Free Delivery',
+        prepay: false,
+        neighborhood: null,
+        color: getColor('Free Delivery')
+      }));
+      info.open({ map, position: location });
+    }
+  });
+}
 
 // Expose callback globally
 window.initMap = initMap;
