@@ -7,9 +7,7 @@
     <!-- Google Fonts (free) -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500;600&family=DM+Sans:wght@500;600&family=Anton&display=swap" rel="stylesheet">
 
-  <style>
-  /* If you own Futura Condensed Extra Bold, upload it to /fonts and keep this.
-     Otherwise we fall back to Anton (already loaded), Impact, system sans. */
+ <style>
   @font-face{
     font-family: "FuturaCE-ExtraBoldCondensed";
     src: url("./fonts/FuturaCondensedExtraBold.woff2") format("woff2");
@@ -23,137 +21,93 @@
     --ring:rgba(37,99,235,.25);
     --shadow:0 8px 24px rgba(0,0,0,.12); --radius:14px;
 
-    /* Zone colors (your palette) */
-    --free:#A2DD9B;         /* light green */
-    --fee-6:#FFE770;        /* light yellow */
-    --fee-6-pre:#FFDD31;    /* slightly darker yellow */
-    --fee-10:#FFB43A;       /* medium yellow */
-    --fee-10-pre:#FF9E20;   /* medium-dark yellow */
-    --fee-15:#FC6722;       /* orange */
-    --fee-15-pre:#FF5100;   /* darker orange */
-    --fee-20:#ED0101;       /* red */
-    --fee-20-pre:#D10000;   /* darker red */
+    /* Zone colors */
+    --free:#A2DD9B;
+    --fee-6:#FFE770;
+    --fee-6-pre:#FFDD31;
+    --fee-10:#FFB43A;
+    --fee-10-pre:#FF9E20;
+    --fee-15:#FC6722;
+    --fee-15-pre:#FF5100;
+    --fee-20:#ED0101;
+    --fee-20-pre:#D10000;
   }
 
   html,body{height:100%;margin:0;}
-  body{font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+  body{font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}
 
-/* ===== HEADER (fixed, red) ===== */
-#dm-header{
-  position: fixed; top:0; left:0; right:0; height:80px;
-  background:#CD0029;
-  border-bottom:1px solid rgba(255,255,255,.1);
-  box-shadow:0 2px 8px rgba(0,0,0,.15);
-  z-index:1000;
-  display:flex; justify-content:flex-start; align-items:center;
-}
-#dm-header-inner{
-  height:100%; width:100%; padding:0 16px;
-  display:flex; align-items:center; justify-content:flex-start; gap:24px;
-}
-#dm-logo{ display:flex; align-items:center; }
-#dm-logo svg,#dm-logo img{ height:32px; width:auto; display:block; }
-#dm-logo svg path{ fill:#fff; }
+  /* ===== HEADER (fixed, red) ===== */
+  #dm-header{
+    position:fixed; top:0; left:0; right:0; height:80px;
+    background:#CD0029;
+    border-bottom:1px solid rgba(255,255,255,.1);
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+    z-index:1000;
+    display:flex; justify-content:flex-start; align-items:center;
+  }
+  #dm-header-inner{
+    height:100%; width:100%; padding:0 16px;
+    display:flex; align-items:center; justify-content:flex-start; gap:24px;
+  }
+  #dm-logo{display:flex; align-items:center;}
+  #dm-logo svg,#dm-logo img{height:32px; width:auto; display:block;}
+  #dm-logo svg path{fill:#fff;}
 
-/* ===== SEARCH (inside header) ===== */
-#searchWrap{
-  display:flex; align-items:center; gap:8px;
-  background:#fff; color:#111827;
-  border-radius:12px; padding:8px 10px; margin:0;
-  border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
-  width:320px; max-width:50vw;
-}
-#searchWrap .icon{ width:18px; height:18px; fill:#6b7280; }
-#search{ flex:1; border:none; outline:none; font-size:14px; background:transparent; color:#111827; }
-#clearBtn{
-  appearance:none; border:none; background:#f3f4f6; color:#6b7280;
-  width:26px; height:26px; border-radius:8px; cursor:pointer; line-height:26px; text-align:center; font-size:14px;
-}
-#clearBtn:hover{ background:#e5e7eb; }
+  /* ===== SEARCH (inside header) ===== */
+  #searchWrap{
+    display:flex; align-items:center; gap:8px;
+    background:#fff; color:#111827;
+    border-radius:12px; padding:8px 10px; margin:0;
+    border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
+    width:320px; max-width:50vw;
+  }
+  #searchWrap .icon{width:18px; height:18px; fill:#6b7280;}
+  #search{flex:1; border:none; outline:none; font-size:14px; background:transparent; color:#111827;}
+  #clearBtn{
+    appearance:none; border:none; background:#f3f4f6; color:#6b7280;
+    width:26px; height:26px; border-radius:8px; cursor:pointer; line-height:26px; text-align:center; font-size:14px;
+  }
+  #clearBtn:hover{background:#e5e7eb;}
 
-/* ===== MAP (fills screen below header) ===== */
-/* IMPORTANT: keep only THIS #map rule — delete any other #map rules elsewhere */
-#map{
-  position: fixed;
-  top:80px;               /* must match header height */
-  left:0; right:0; bottom:0;
-  width:100%;
-  z-index:0;
-  background:#eef;        /* temp: proves the div is visible; remove later */
-}
+  /* ===== MAP (fills screen below header) ===== */
+  #map{
+    position:fixed;
+    top:80px;           /* must match header height */
+    left:0; right:0; bottom:0;
+    width:100%;
+    z-index:0;
+    background:#eef;   /* TEMP debug; remove when you see tiles */
+  }
 
-/* ===== Small screens ===== */
-@media (max-width:640px){
-  #dm-header{ height:120px; }
-  #map{ top:120px; }      /* match header height on mobile */
-  #dm-header-inner{ flex-direction:column; align-items:flex-start; gap:12px; }
-  #searchWrap{ width:100%; max-width:none; }
-}
-
-
-  /* ---------------- Popup styled like your screenshot ---------------- */
+  /* ===== Popup ===== */
   .dm-popup{
-    font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    color:#0b0b0c;
-    min-width: 220px; max-width: 320px;
-    background:#fff;
-    border:1px solid rgba(0,0,0,.08);
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,.14);
+    font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:#0b0b0c; min-width:220px; max-width:320px; background:#fff;
+    border:1px solid rgba(0,0,0,.08); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.14);
     overflow:hidden;
   }
-  .dm-head{
-    display:flex; justify-content:space-between; align-items:center;
-    gap:12px; padding:12px 12px;
-    background:#fff;
-  }
+  .dm-head{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; background:#fff;}
   .dm-title{
-    /* Futura Condensed Extra Bold → fallback to Anton if not present */
-    font-family: "FuturaCE-ExtraBoldCondensed","Anton","Impact",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    font-weight: 800;
-    letter-spacing: .3px;
-    font-size: 22px;
-    line-height: 1;
-    text-transform: uppercase;
+    font-family:"FuturaCE-ExtraBoldCondensed","Anton","Impact",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-weight:800; letter-spacing:.3px; font-size:22px; line-height:1; text-transform:uppercase;
   }
-  .dm-rowline{
-    display:flex; justify-content:space-between; align-items:center;
-    gap:12px; margin-top:10px;
-  }
-  .dm-pill{
-    display:inline-flex; align-items:center; gap:8px;
-    height: 28px; padding:0 12px; border-radius: 14px;
-    border: 1px solid rgba(0,0,0,.10);
-    background:#fff;
-    font-size:14px; font-weight:600; letter-spacing:.1px;
-  }
-  .dm-prepay{
-    height: 22px; padding:0 8px; border-radius:999px;
-    border:1px solid #f5d565; background:#fff8e1; color:#8b5e00;
-    font-size:12px; font-weight:700; margin-left:8px;
-  }
-  .dm-zip{
-    font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    background:#111827; color:#fff; border-color:#111827;
-  }
-  .dm-body{padding:0 12px 12px 12px;}
+  .dm-rowline{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:10px;}
+  .dm-pill{display:inline-flex; align-items:center; gap:8px; height:28px; padding:0 12px; border-radius:14px; border:1px solid rgba(0,0,0,.10); background:#fff; font-size:14px; font-weight:600; letter-spacing:.1px;}
+  .dm-prepay{height:22px; padding:0 8px; border-radius:999px; border:1px solid #f5d565; background:#fff8e1; color:#8b5e00; font-size:12px; font-weight:700; margin-left:8px;}
+  .dm-zip{font-family:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; background:#111827; color:#fff; border-color:#111827;}
+  .dm-body{padding:0 12px 12px;}
   .dm-left{display:flex; align-items:center;}
-  .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
+  .dm-fee-dot{width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:8px;}
 
-  /* ---------------- Responsive ---------------- */
-@media (max-width: 640px){
-  #dm-header{ height: 120px; }
-  #map{ top: 120px; }
-  #dm-header-inner{ flex-direction: column; align-items: flex-start; gap: 12px; }
-  #searchWrap{ width: 100%; max-width: none; }
-}
-    
-/* Temporary debug to verify map container renders */
-#map {
-  background: #eef; /* light blue so you can see the div */
-}
-    
+  /* ===== Small screens ===== */
+  @media (max-width:640px){
+    #dm-header{height:120px;}
+    #map{top:120px;}        /* match header height on mobile */
+    #dm-header-inner{flex-direction:column; align-items:flex-start; gap:12px;}
+    #searchWrap{width:100%; max-width:none;}
+  }
 </style>
+
 
     <script>
 /** GROUPS — label is the fee; prepay indicates prepayment zones */
