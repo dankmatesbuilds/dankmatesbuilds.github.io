@@ -9,16 +9,16 @@
         --ring:rgba(37,99,235,.25);
         --shadow:0 8px 24px rgba(0,0,0,.12); --radius:14px;
 
-        /* Zone colors */
-        --free:#A2DD9B;
-        --fee-6:#FFE770;          /* light yellow */
-        --fee-6-pre:#FFDD31;      /* slightly darker yellow */
-        --fee-10:#FFB43A;         /* medium yellow */
-        --fee-10-pre:#FF9E20;     /* medium-dark yellow */
-        --fee-15:#FC6722;         /* orange */
-        --fee-15-pre:#FF5100;     /* darker orange */
-        --fee-20:#ED0101;         /* red */
-        --fee-20-pre:#D10000;     /* darker red */
+        /* Zone colors (kept from your file) */
+        --free:#A2DD9B;         /* light green */
+        --fee-6:#FFE770;        /* light yellow */
+        --fee-6-pre:#FFDD31;    /* slightly darker yellow */
+        --fee-10:#FFB43A;       /* medium yellow */
+        --fee-10-pre:#FF9E20;   /* medium-dark yellow */
+        --fee-15:#FC6722;       /* orange */
+        --fee-15-pre:#FF5100;   /* darker orange */
+        --fee-20:#ED0101;       /* red */
+        --fee-20-pre:#D10000;   /* darker red */
       }
       html,body{height:100%;margin:0;}
       #map{height:100%;width:100%;}
@@ -38,16 +38,36 @@
       #clearBtn{appearance:none;border:none;background:#f3f4f6;color:#6b7280;width:26px;height:26px;border-radius:8px;cursor:pointer;line-height:26px;text-align:center;font-size:14px;}
       #clearBtn:hover{background:#e5e7eb;}
 
-      /* Pretty InfoWindow content */
-      .dm-popup{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-width:240px;max-width:320px;color:var(--text);}
-      .dm-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:linear-gradient(135deg,#111827,#374151);color:#fff;border-radius:12px 12px 0 0;}
-      .dm-fee{background:#fff;color:#111827;font-weight:700;padding:2px 8px;border-radius:999px;font-size:12px;}
-      .dm-prepay{background:#fde68a;color:#92400e;font-weight:700;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #f59e0b;}
-      .dm-body{padding:12px;background:#fff;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;}
-      .dm-row{display:flex;gap:8px;margin:6px 0;font-size:14px;}
-      .dm-label{width:76px;color:var(--muted);}
-      .dm-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;border:1px solid #e5e7eb;background:#f9fafb;font-size:12px;}
-      .dm-dot{width:10px;height:10px;border-radius:999px;display:inline-block;}
+      /* --- Minimal, Apple-ish popup card --- */
+      .dm-popup{
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        color:#0b0b0c;
+        min-width: 220px; max-width: 320px;
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: saturate(180%) blur(10px);
+        border: 1px solid rgba(0,0,0,.08);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0,0,0,.12);
+        overflow: hidden;
+      }
+      .dm-head{
+        display:flex; justify-content:space-between; align-items:center;
+        padding:12px 14px;
+        background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.6));
+      }
+      .dm-title{
+        font-size: 16px; font-weight: 700; letter-spacing: .2px;
+      }
+      .dm-chiprow{ display:flex; gap:8px; align-items:center; }
+      .dm-chip{
+        display:inline-flex; align-items:center; gap:6px;
+        height: 22px; padding:0 8px; border-radius: 999px;
+        border: 1px solid rgba(0,0,0,.12);
+        background:#fff; font-size:12px; font-weight:600;
+      }
+      .dm-chip.zip{ background:#111827; color:#fff; border-color:#111827; }
+      .dm-chip.prepay{ background:#fff8e1; color:#8b5e00; border-color:#f5d565; }
+      .dm-body{ display:none; } /* no body needed */
     </style>
 
     <script>
@@ -83,56 +103,45 @@ const ZIP_GROUPS = [
   }
 ];
 
-/* Color palette by label */
+/* Pull CSS vars for palette */
 function getColor(label){
   switch(label){
-    case "Free Delivery": return getComputedStyleColor('--free');
-    case "$6": return getComputedStyleColor('--fee-6');
-    case "$6 Prepay": return getComputedStyleColor('--fee-6-pre');
-    case "$10": return getComputedStyleColor('--fee-10');
-    case "$10 Prepay": return getComputedStyleColor('--fee-10-pre');
-    case "$15": return getComputedStyleColor('--fee-15');
-    case "$15 Prepay": return getComputedStyleColor('--fee-15-pre');
-    case "$20": return getComputedStyleColor('--fee-20');
-    case "$20 Prepay": return getComputedStyleColor('--fee-20-pre');
-    default: return getComputedStyleColor('--free');
+    case "Free Delivery": return cssVar('--free');
+    case "$6": return cssVar('--fee-6');
+    case "$6 Prepay": return cssVar('--fee-6-pre');
+    case "$10": return cssVar('--fee-10');
+    case "$10 Prepay": return cssVar('--fee-10-pre');
+    case "$15": return cssVar('--fee-15');
+    case "$15 Prepay": return cssVar('--fee-15-pre');
+    case "$20": return cssVar('--fee-20');
+    case "$20 Prepay": return cssVar('--fee-20-pre');
+    default: return cssVar('--free');
   }
 }
-function getComputedStyleColor(varName){
-  const el = document.documentElement;
-  const val = getComputedStyle(el).getPropertyValue(varName).trim();
-  return val || '#f5f5f5';
+function cssVar(name){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || '#f5f5f5';
 }
 
-/** Fast lookup: ZIP -> group meta */
+/** Lookup: ZIP -> {color,label,fee,prepay} */
 const ZIP_STYLE = (() => {
   const m = new Map();
   ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, label: g.label, fee: g.fee, prepay: g.prepay })));
   return m;
 })();
 
-/* Popup template — header shows fee label; chips for ZIP + Prepay tag */
-function popupHTML({address, zip, label, fee, color, prepay}){
-  const feeChip = (label === "Free Delivery" || fee === 0)
-    ? `<div class="dm-fee" style="background:#fff;color:#111827;">Free Delivery</div>`
-    : `<div class="dm-fee">$${fee}</div>`;
-
+/* Minimal popup template */
+function popupHTML({ zip, label, prepay }) {
   return `
     <div class="dm-popup">
       <div class="dm-head">
-        <div>${label || 'Free Delivery'}</div>
-        <div style="display:flex; gap:6px;">
-          ${prepay ? `<div class="dm-prepay">Prepay</div>` : ``}
-          ${feeChip}
-          <div class="dm-fee" style="background:#111827;color:#fff;">${zip}</div>
+        <div class="dm-title">${label || 'Free Delivery'}</div>
+        <div class="dm-chiprow">
+          ${prepay ? `<span class="dm-chip prepay">Prepay</span>` : ``}
+          <span class="dm-chip zip">${zip}</span>
         </div>
       </div>
-      <div class="dm-body">
-        ${address ? `<div class="dm-row"><div class="dm-label">Address</div><div>${address}</div></div>` : ''}
-        <div class="dm-row"><div class="dm-label">Zone</div>
-          <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${label || 'Free Delivery'}${prepay ? " · Prepay" : ""}</div>
-        </div>
-      </div>
+      <div class="dm-body"></div>
     </div>
   `;
 }
@@ -140,44 +149,8 @@ function popupHTML({address, zip, label, fee, color, prepay}){
 let lastHighlighted = null;
 let marker = null;
 let info = null;
-
-/* Subtle text label overlay (for hover ZIP text) */
-class TextLabel extends google.maps.OverlayView {
-  constructor(opts) { super(); this.position = opts.position; this.text = opts.text; this.div = null; }
-  onAdd(){
-    this.div = document.createElement('div');
-    this.div.style.position = 'absolute';
-    this.div.style.transform = 'translate(-50%,-50%)';
-    this.div.style.padding = '2px 6px';
-    this.div.style.font = '600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
-    this.div.style.color = '#111';
-    this.div.style.background = 'rgba(255,255,255,0.9)';
-    this.div.style.border = '1px solid #e5e7eb';
-    this.div.style.borderRadius = '6px';
-    this.div.style.boxShadow = '0 2px 6px rgba(0,0,0,.12)';
-    this.div.style.pointerEvents = 'none';
-    this.div.style.zIndex = '9999';           // ensure on top
-    this.div.textContent = this.text;
-
-    // 👇 Put the label in the TOPMOST pane
-    const panes = this.getPanes();
-    panes.floatPane.appendChild(this.div);
-  }
-  draw(){
-    const proj = this.getProjection();
-    if (!proj || !this.position || !this.div) return;
-    const p = proj.fromLatLngToDivPixel(this.position);
-    this.div.style.left = p.x + 'px';
-    this.div.style.top  = p.y + 'px';
-  }
-  onRemove(){
-    if (this.div && this.div.parentNode) this.div.parentNode.removeChild(this.div);
-    this.div = null;
-  }
-  setPosition(pos){ this.position = pos; this.draw(); }
-  setText(t){ this.text = t; if (this.div) this.div.textContent = t; }
-}
-
+let hoverLabelMarker = null;   // label-only marker for hover
+let activeLegend = null;       // legend spotlight filter
 
 function initMap() {
   const map = new google.maps.Map(document.getElementById("map"), {
@@ -185,6 +158,7 @@ function initMap() {
     center: { lat: 39.9526, lng: -75.1652 }
   });
 
+  // Map/Satellite control and search placement
   map.setOptions({
     mapTypeControl: true,
     mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT }
@@ -193,116 +167,195 @@ function initMap() {
     .push(document.getElementById('searchWrap'));
 
   info = new google.maps.InfoWindow();
-  let hoverLabel = null; // reused hover label
 
-  // Load polygons and style by fee (uniform outlines)
+  // ---- Data styling with spotlight support ----
   map.data.loadGeoJson('zip-map.json', null, () => {
-    map.data.setStyle(feature => {
+    function baseOpacity(fee){
+      return (fee >= 20) ? 0.45 :
+             (fee >= 15) ? 0.35 :
+             (fee >= 10) ? 0.30 :
+             (fee >=  6) ? 0.28 : 0.22;  // free
+    }
+    function computeStyle(feature){
       const zip = getZipFromFeature(feature);
-      const s = ZIP_STYLE.get(String(zip));
-      const fee = s?.fee ?? 0;
-      const label = s?.label ?? "Free Delivery";
-      const color = s?.color ?? getColor("Free Delivery");
+      const s = ZIP_STYLE.get(String(zip)) || {};
+      const fee   = s.fee   ?? 0;
+      const color = s.color ?? getColor("Free Delivery");
+      let fillOpacity = baseOpacity(fee);
+      let strokeColor = color;
+      let strokeWeight = 1.5;
 
-      const fillOpacity =
-        fee >= 20 ? 0.45 :
-        fee >= 15 ? 0.35 :
-        fee >= 10 ? 0.30 :
-        fee >=  6 ? 0.28 : 0.22;
+      // Spotlight: dim non-matching when a legend filter is active
+      if (activeLegend && (s.label !== activeLegend)) {
+        fillOpacity = 0.08;
+        strokeColor = '#c7c7c7';
+        strokeWeight = 1;
+      } else if (activeLegend) {
+        strokeWeight = 2; // subtle emphasis on matching zones
+      }
+      return { fillColor: color, fillOpacity, strokeColor, strokeWeight };
+    }
+    map.data.setStyle(computeStyle);
 
-      return {
-        fillColor: color,
-        fillOpacity,
-        strokeColor: color,
-        strokeWeight: 1.5
-      };
-    });
+    // expose for legend refresh
+    window.__refreshZoneStyles = () => map.data.setStyle(computeStyle);
   });
 
   // Click → popup + strong highlight
   map.data.addListener('click', (e) => {
     const zip = getZipFromFeature(e.feature);
     const s = ZIP_STYLE.get(String(zip)) || {};
-    const label = s.label || "Free Delivery";
-    const fee = s.fee || 0;
-    const color = s.color || getColor("Free Delivery");
-    const prepay = !!s.prepay;
-
     highlightFeature(map, e.feature);
-
     info.setContent(popupHTML({
-      address: null, zip, label, fee, color, prepay
+      zip,
+      label: s.label || 'Free Delivery',
+      prepay: !!s.prepay
     }));
     info.setPosition(e.latLng);
     info.open(map);
   });
 
-  // Hover effects: thicken outline + centered ZIP text (no popup)
-  // Hover effects: thicken outline + centered ZIP text (no popup)
-map.data.addListener('mouseover', (e) => {
-  const zip = getZipFromFeature(e.feature);
-  map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.34 });
+  // Hover: thicken outline + ZIP label (label-only marker)
+  map.data.addListener('mouseover', (e) => {
+    const zip = getZipFromFeature(e.feature);
+    map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.34 });
 
-  // Prefer polygon center; if not available, use cursor position
-  const center = centerOfFeature(e.feature) || e.latLng;
+    const center = centerOfFeature(e.feature) || e.latLng;
+    if (!hoverLabelMarker) {
+      hoverLabelMarker = new google.maps.Marker({
+        map,
+        position: center,
+        clickable: false,
+        zIndex: 9999,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0, strokeWeight: 0 },
+        label: {
+          text: String(zip),
+          color: '#111',
+          fontSize: '12px',
+          fontWeight: '600',
+          fontFamily: 'system-ui,-apple-system,Segoe UI,Roboto,sans-serif'
+        },
+        optimized: false
+      });
+    } else {
+      hoverLabelMarker.setPosition(center);
+      hoverLabelMarker.setLabel({
+        text: String(zip),
+        color: '#111',
+        fontSize: '12px',
+        fontWeight: '600',
+        fontFamily: 'system-ui,-apple-system,Segoe UI,Roboto,sans-serif'
+      });
+      hoverLabelMarker.setMap(map);
+    }
+  });
+  map.data.addListener('mousemove', (e) => {
+    const center = centerOfFeature(e.feature) || e.latLng;
+    if (hoverLabelMarker && center) hoverLabelMarker.setPosition(center);
+  });
+  map.data.addListener('mouseout', (e) => {
+    if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
+    if (hoverLabelMarker) hoverLabelMarker.setMap(null);
+  });
 
-  if (!hoverLabel) {
-    hoverLabel = new TextLabel({ position: center, text: zip });
-    hoverLabel.setMap(map);
-  } else {
-    hoverLabel.setText(zip);
-    hoverLabel.setPosition(center);
-    hoverLabel.setMap(map);
-  }
-});
-
-map.data.addListener('mousemove', (e) => {
-  const center = centerOfFeature(e.feature) || e.latLng;
-  if (hoverLabel && center) hoverLabel.setPosition(center);
-});
-
-map.data.addListener('mouseout', (e) => {
-  if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
-  if (hoverLabel) hoverLabel.setMap(null);
-});
-
-
-  // Legend — requested order (including Free Delivery at the top)
+  // ---- Interactive legend (requested order) ----
   const ORDER = ["Free Delivery", "$6", "$6 Prepay", "$10", "$10 Prepay", "$15", "$15 Prepay", "$20", "$20 Prepay"];
-  const LEGEND_GROUPS = (() => {
-    // Build a unique map by label, preserving your order
-    const byLabel = new Map();
-    ZIP_GROUPS.forEach(g => byLabel.set(g.label, g));
-    // Ensure Free Delivery is present even if no ZIPs currently map to it
-    if (!byLabel.has("Free Delivery")) byLabel.set("Free Delivery", { label:"Free Delivery", color:getColor("Free Delivery"), prepay:false, fee:0 });
-    return ORDER.map(l => byLabel.get(l)).filter(Boolean);
+  const groupsByLabel = (() => {
+    const m = new Map();
+    ZIP_GROUPS.forEach(g => m.set(g.label, g));
+    if (!m.has("Free Delivery")) m.set("Free Delivery", { label:"Free Delivery", color:getColor("Free Delivery"), prepay:false, fee:0 });
+    return m;
   })();
 
   const legend = document.createElement('div');
   legend.style.background = '#fff';
   legend.style.margin = '10px';
-  legend.style.padding = '8px 10px';
-  legend.style.borderRadius = '8px';
+  legend.style.padding = '10px';
+  legend.style.borderRadius = '10px';
   legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-  legend.innerHTML = '<b>Service Areas</b><br/>' +
-  LEGEND_GROUPS.map(g => {
-    // Strip " Prepay" from the label for display, keep pill if needed
-    const baseLabel = g.label.replace(" Prepay", "");
-    return `
-      <div style="display:flex;align-items:center;margin:4px 0;">
-        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;border:1px solid rgba(0,0,0,.12)"></span>
-        ${baseLabel}${g.prepay ? ' <span style="margin-left:6px;background:#fde68a;border:1px solid #f59e0b;color:#92400e;border-radius:999px;padding:0 6px;font-size:11px;">Prepay</span>' : ''}
-      </div>`;
-  }).join('');
+  legend.style.font = '13px/1.3 system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+
+  const title = document.createElement('div');
+  title.style.fontWeight = '700';
+  title.style.marginBottom = '6px';
+  title.textContent = 'Service Areas';
+  legend.appendChild(title);
+
+  ORDER.forEach(label => {
+    const g = groupsByLabel.get(label);
+    if (!g) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('data-label', g.label);
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.gap = '8px';
+    btn.style.width = '100%';
+    btn.style.margin = '4px 0';
+    btn.style.padding = '6px 8px';
+    btn.style.border = '1px solid rgba(0,0,0,.08)';
+    btn.style.borderRadius = '8px';
+    btn.style.background = '#fff';
+    btn.style.cursor = 'pointer';
+    btn.style.textAlign = 'left';
+
+    const swatch = document.createElement('span');
+    swatch.style.display = 'inline-block';
+    swatch.style.width = '14px';
+    swatch.style.height = '14px';
+    swatch.style.borderRadius = '3px';
+    swatch.style.background = g.color;
+    swatch.style.border = '1px solid rgba(0,0,0,.12)';
+
+    // Show "$X" text even when label is "$X Prepay"
+    const baseLabelText = g.label.replace(' Prepay', '');
+    const text = document.createElement('span');
+    text.textContent = baseLabelText;
+
+    btn.appendChild(swatch);
+    btn.appendChild(text);
+
+    if (g.prepay) {
+      const pill = document.createElement('span');
+      pill.textContent = 'Prepay';
+      pill.style.marginLeft = '6px';
+      pill.style.background = '#fde68a';
+      pill.style.color = '#8b5e00';
+      pill.style.border = '1px solid #f5d565';
+      pill.style.borderRadius = '999px';
+      pill.style.padding = '0 6px';
+      pill.style.fontSize = '11px';
+      pill.style.fontWeight = '700';
+      btn.appendChild(pill);
+    }
+
+    // Click-to-spotlight behavior
+    btn.addEventListener('click', () => {
+      const clicked = btn.getAttribute('data-label');
+      activeLegend = (activeLegend === clicked) ? null : clicked;
+
+      // visual state
+      legend.querySelectorAll('[data-label]').forEach(el => {
+        const isActive = el.getAttribute('data-label') === activeLegend;
+        el.style.outline = isActive ? '2px solid #111827' : 'none';
+        el.style.background = isActive ? 'rgba(0,0,0,0.04)' : '#fff';
+      });
+
+      if (window.__refreshZoneStyles) window.__refreshZoneStyles();
+      if (typeof clearHighlight === 'function') clearHighlight(map);
+    });
+
+    legend.appendChild(btn);
+  });
 
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
 
-  // Autocomplete (Philly + South NJ bias)
+  // ---- Autocomplete (Philly + South NJ bias) ----
   const phillySJBounds = new google.maps.LatLngBounds(
     { lat: 39.35, lng: -75.85 },
     { lat: 40.40, lng: -74.20 }
   );
-
   const input = document.getElementById('search');
   const ac = new google.maps.places.Autocomplete(input, {
     fields: ['geometry','formatted_address','address_components','place_id'],
@@ -321,11 +374,16 @@ map.data.addListener('mouseout', (e) => {
       if (marker) { marker.setMap(null); marker = null; }
       clearHighlight(map);
       info.close();
-      if (hoverLabel) hoverLabel.setMap(null);
+      if (hoverLabelMarker) hoverLabelMarker.setMap(null);
+      // also clear legend filter
+      activeLegend = null;
+      const nodeList = legend.querySelectorAll('[data-label]');
+      nodeList.forEach(el => { el.style.outline = 'none'; el.style.background = '#fff'; });
+      if (window.__refreshZoneStyles) window.__refreshZoneStyles();
     });
   }
 
-  // Search handler — camera stays on address
+  // Search handler — camera stays on the address
   ac.addListener('place_changed', async () => {
     const place = ac.getPlace();
     let location = place?.geometry?.location || null;
@@ -353,25 +411,25 @@ map.data.addListener('mouseout', (e) => {
       highlightFeature(map, containing);
       const zip = getZipFromFeature(containing);
       const s = ZIP_STYLE.get(String(zip)) || {};
-      const label = s.label || "Free Delivery";
-      const fee = s.fee || 0;
-      const color = s.color || getColor("Free Delivery");
-      const prepay = !!s.prepay;
-
       info.setContent(popupHTML({
-        address: place.formatted_address || '—',
-        zip, label, fee, color, prepay
+        zip,
+        label: s.label || 'Free Delivery',
+        prepay: !!s.prepay
       }));
       info.open({ map, position: location });
     } else {
       clearHighlight(map);
-      info.setContent(`<div class="dm-popup"><div class="dm-head"><div>Result</div><div class="dm-fee">Free Delivery</div></div><div class="dm-body"><div class="dm-row"><div class="dm-label">Address</div><div>${place.formatted_address || '—'}</div></div><div class="dm-row"><div class="dm-label">Status</div><div>Not in a mapped ZIP.</div></div></div></div>`);
+      info.setContent(popupHTML({
+        zip: '—',
+        label: 'Free Delivery',
+        prepay: false
+      }));
       info.open({ map, position: location });
     }
   });
 }
 
-// Expose callback globally so the loader can find it
+// Expose callback globally
 window.initMap = initMap;
 
 /* Helpers */
@@ -407,7 +465,7 @@ function featureContainsLatLng(feature, latLng){
   walk(geom);
   return inside;
 }
-/* Build full bounds of a feature, return center LatLng */
+/* Bounds center as robust centroid */
 function centerOfFeature(feature){
   const bounds = new google.maps.LatLngBounds();
   let has = false;
