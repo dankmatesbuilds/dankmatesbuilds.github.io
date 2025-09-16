@@ -152,6 +152,12 @@
   #dm-header-inner{ flex-direction: column; align-items: flex-start; gap: 12px; }
   #searchWrap{ width: 100%; max-width: none; }
 }
+    
+/* Temporary debug to verify map container renders */
+#map {
+  background: #eef; /* light blue so you can see the div */
+}
+    
 </style>
 
     <script>
@@ -241,6 +247,7 @@ let hoverLabelMarker = null;   // label-only marker for hover
 let activeLegend = null;       // legend spotlight filter
 
 function initMap() {
+  console.log("initMap: starting"); 
   const map = new google.maps.Map(document.getElementById("map"), {
     zoom: 10,
     center: { lat: 39.9526, lng: -75.1652 }
