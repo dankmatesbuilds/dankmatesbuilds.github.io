@@ -1,18 +1,22 @@
+
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
     <title>Dankmates Delivery Zones</title>
 
-    <!-- Free web fonts -->
+    <!-- Google Fonts (free) -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500;600&family=DM+Sans:wght@500;600&family=Anton&display=swap" rel="stylesheet">
 
     <style>
-      /* Optional premium font; safe to leave even if the file isn’t present */
+      /* If you own Futura Condensed Extra Bold, upload it to /fonts and keep this.
+         Otherwise we fall back to Anton (already loaded), Impact, system sans. */
       @font-face{
         font-family: "FuturaCE-ExtraBoldCondensed";
         src: url("./fonts/FuturaCondensedExtraBold.woff2") format("woff2");
-        font-weight: 800; font-style: normal; font-display: swap;
+        font-weight: 800;
+        font-style: normal;
+        font-display: swap;
       }
 
       :root{
@@ -20,528 +24,527 @@
         --ring:rgba(37,99,235,.25);
         --shadow:0 8px 24px rgba(0,0,0,.12); --radius:14px;
 
-        /* Zone colors */
-        --free:#A2DD9B;
-        --fee-6:#FFE770;
-        --fee-6-pre:#FFDD31;
-        --fee-10:#FFB43A;
-        --fee-10-pre:#FF9E20;
-        --fee-15:#FC6722;
-        --fee-15-pre:#FF5100;
-        --fee-20:#ED0101;
-        --fee-20-pre:#D10000;
+        /* Zone colors (your palette) */
+        --free:#A2DD9B;         /* light green */
+        --fee-6:#FFE770;        /* light yellow */
+        --fee-6-pre:#FFDD31;    /* slightly darker yellow */
+        --fee-10:#FFB43A;       /* medium yellow */
+        --fee-10-pre:#FF9E20;   /* medium-dark yellow */
+        --fee-15:#FC6722;       /* orange */
+        --fee-15-pre:#FF5100;   /* darker orange */
+        --fee-20:#ED0101;       /* red */
+        --fee-20-pre:#D10000;   /* darker red */
       }
 
       html,body{height:100%;margin:0;}
-      body{font-family:"DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+      body{font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+      #map{height:100%;width:100%;}
 
-      /* ===== HEADER (fixed, red) ===== */
-      #dm-header{
-        position:fixed; top:0; left:0; right:0; height:80px;
-        background:#CD0029;
-        border-bottom:1px solid rgba(255,255,255,.1);
-        box-shadow:0 2px 8px rgba(0,0,0,.15);
-        z-index:1000;
-        display:flex; justify-content:flex-start; align-items:center;
-      }
-      #dm-header-inner{
-        height:100%; width:100%; padding:0 16px;
-        display:flex; align-items:center; justify-content:flex-start; gap:24px;
-      }
-      #dm-logo{display:flex; align-items:center;}
-      #dm-logo svg,#dm-logo img{height:32px; width:auto; display:block;}
-      #dm-logo svg path{fill:#fff;}
-
-      /* ===== SEARCH (inside header) ===== */
+      /* Search control (placed in TOP_LEFT by JS) */
       #searchWrap{
         display:flex; align-items:center; gap:8px;
-        background:#fff; color:#111827;
-        border-radius:12px; padding:8px 10px; margin:0;
-        border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
-        width:360px; max-width:52vw;
+        background:var(--bg); color:var(--text);
+        border-radius:var(--radius); padding:10px 12px;
+        box-shadow:var(--shadow); border:1px solid #e5e7eb;
+        margin:10px;
       }
-      #searchWrap .icon{width:18px; height:18px; fill:#6b7280;}
-      #search{flex:1; border:none; outline:none; font-size:14px; background:transparent; color:#111827;}
-      #clearBtn{
-        appearance:none; border:none; background:#f3f4f6; color:#6b7280;
-        width:26px; height:26px; border-radius:8px; cursor:pointer; line-height:26px; text-align:center; font-size:14px;
-      }
+      #searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
+      #search{width:320px;max-width:62vw;border:none;outline:none;font-size:14px;color:var(--text);background:transparent;}
+      #search::placeholder{color:#9ca3af;}
+      #searchWrap:focus-within{box-shadow:var(--shadow),0 0 0 4px var(--ring);border-color:#d1d5db;}
+      #clearBtn{appearance:none;border:none;background:#f3f4f6;color:#6b7280;width:26px;height:26px;border-radius:8px;cursor:pointer;line-height:26px;text-align:center;font-size:14px;}
       #clearBtn:hover{background:#e5e7eb;}
 
-      /* ===== MAP (fills screen below header) ===== */
-      #map{
-        position:fixed;
-        top:80px; left:0; right:0; bottom:0;
-        width:100%;
-        z-index:0;
-        background:#eef; /* debug color; remove if you want */
-      }
-
-      /* ===== Popup ===== */
+      /* --- Popup styled like your screenshot --- */
       .dm-popup{
-        font-family:"DM Sans",ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-        color:#0b0b0c; min-width:220px; max-width:320px; background:#fff;
-        border:1px solid rgba(0,0,0,.08); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.14);
+        font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        color:#0b0b0c;
+        min-width: 220px; max-width: 320px;
+        background:#fff;
+        border:1px solid rgba(0,0,0,.08);
+        border-radius: 14px;
+        box-shadow: 0 10px 30px rgba(0,0,0,.14);
         overflow:hidden;
       }
-      .dm-head{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px; background:#fff;}
+      .dm-head{
+        display:flex; justify-content:space-between; align-items:center;
+        gap:12px; padding:12px 12px;
+        background:#fff;
+      }
       .dm-title{
-        font-family:"FuturaCE-ExtraBoldCondensed","Anton","Impact",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-        font-weight:800; letter-spacing:.3px; font-size:22px; line-height:1; text-transform:uppercase;
+        /* Futura Condensed Extra Bold → fallback to Anton if not present */
+        font-family: "FuturaCE-ExtraBoldCondensed","Anton","Impact",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+        font-weight: 800;
+        letter-spacing: .3px;
+        font-size: 22px;
+        line-height: 1;
+        text-transform: uppercase;
       }
-      .dm-rowline{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:10px;}
-      .dm-pill{display:inline-flex; align-items:center; gap:8px; height:28px; padding:0 12px; border-radius:14px; border:1px solid rgba(0,0,0,.10); background:#fff; font-size:14px; font-weight:600; letter-spacing:.1px;}
-      .dm-prepay{height:22px; padding:0 8px; border-radius:999px; border:1px solid #f5d565; background:#fff8e1; color:#8b5e00; font-size:12px; font-weight:700; margin-left:8px;}
-      .dm-zip{font-family:"DM Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; background:#111827; color:#fff; border-color:#111827;}
-      .dm-body{padding:0 12px 12px;}
+      .dm-rowline{
+        display:flex; justify-content:space-between; align-items:center;
+        gap:12px; margin-top:10px;
+      }
+      .dm-pill{
+        display:inline-flex; align-items:center; gap:8px;
+        height: 28px; padding:0 12px; border-radius: 14px;
+        border: 1px solid rgba(0,0,0,.10);
+        background:#fff;
+        font-size:14px; font-weight:600; letter-spacing:.1px;
+      }
+      .dm-prepay{
+        height: 22px; padding:0 8px; border-radius:999px;
+        border:1px solid #f5d565; background:#fff8e1; color:#8b5e00;
+        font-size:12px; font-weight:700; margin-left:8px;
+      }
+      .dm-zip{
+        font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        background:#111827; color:#fff; border-color:#111827;
+      }
+      .dm-body{padding:0 12px 12px 12px;}
       .dm-left{display:flex; align-items:center;}
-      .dm-fee-dot{width:10px; height:10px; border-radius:999px; display:inline-block; margin-right:8px;}
-
-      /* Small screens */
-      @media (max-width:640px){
-        #dm-header{height:120px;}
-        #map{top:120px;}
-        #dm-header-inner{flex-direction:column; align-items:flex-start; gap:12px;}
-        #searchWrap{width:100%; max-width:none;}
-      }
+      .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
     </style>
 
     <script>
-      /* ------------------- DATA ------------------- */
-      const ZIP_GROUPS = [
-        { label:"$6",        fee:6,  prepay:false, color:getColor("$6"),        zips:["19153","19131","19151","19140","19134","19129","19142"] },
-        { label:"$6 Prepay", fee:6,  prepay:true,  color:getColor("$6 Prepay"), zips:["19032","19079","19023","19050"] },
-        { label:"$10",       fee:10, prepay:false, color:getColor("$10"),       zips:["19144","19141","19120","19124","19137"] },
-        { label:"$10 Prepay",fee:10, prepay:true,  color:getColor("$10 Prepay"),zips:["19082","19004","19074","19066","19036","19096","19018","19026","19113","19029"] },
-        { label:"$15",       fee:15, prepay:false, color:getColor("$15"),       zips:["19128","19119","19138","19126","19135","19149","19012","19127"] },
-        { label:"$15 Prepay",fee:15, prepay:true,  color:getColor("$15 Prepay"),zips:["19072","19003","19083","19078","19076","19043","19070","19033"] },
-        { label:"$20",       fee:20, prepay:false, color:getColor("$20"),       zips:["19118","19150","19111","19136","19152"] },
-        { label:"$20 Prepay",fee:20, prepay:true,  color:getColor("$20 Prepay"),
-          zips:["19022","19094","19081","19064","19041","19010","19085","19428","19035","19027",
-                "19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007","19008"] }
-      ];
+/** GROUPS — label is the fee; prepay indicates prepayment zones */
+const ZIP_GROUPS = [
+  { label:"$6",        fee:6,  prepay:false, color:getColor("$6"),        zips:["19153","19131","19151","19140","19134","19129","19142"] },
+  { label:"$6 Prepay", fee:6,  prepay:true,  color:getColor("$6 Prepay"), zips:["19032","19079","19023","19050"] },
+  { label:"$10",       fee:10, prepay:false, color:getColor("$10"),       zips:["19144","19141","19120","19124","19137"] },
+  { label:"$10 Prepay",fee:10, prepay:true,  color:getColor("$10 Prepay"),zips:["19082","19004","19074","19066","19036","19096","19018","19026","19113","19029"] },
+  { label:"$15",       fee:15, prepay:false, color:getColor("$15"),       zips:["19128","19119","19138","19126","19135","19149","19012","19127"] },
+  { label:"$15 Prepay",fee:15, prepay:true,  color:getColor("$15 Prepay"),zips:["19072","19003","19083","19078","19076","19043","19070","19033"] },
+  { label:"$20",       fee:20, prepay:false, color:getColor("$20"),       zips:["19118","19150","19111","19136","19152"] },
+  { label:"$20 Prepay",fee:20, prepay:true,  color:getColor("$20 Prepay"),
+    zips:["19022","19094","19081","19064","19041","19010","19085","19428","19035","19027","19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007","19008"] }
+];
 
-      function cssVar(name){
-        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-        return v || '#f5f5f5';
-      }
-      function getColor(label){
-        switch(label){
-          case "Free Delivery": return cssVar('--free');
-          case "$6": return cssVar('--fee-6');
-          case "$6 Prepay": return cssVar('--fee-6-pre');
-          case "$10": return cssVar('--fee-10');
-          case "$10 Prepay": return cssVar('--fee-10-pre');
-          case "$15": return cssVar('--fee-15');
-          case "$15 Prepay": return cssVar('--fee-15-pre');
-          case "$20": return cssVar('--fee-20');
-          case "$20 Prepay": return cssVar('--fee-20-pre');
-          default: return cssVar('--free');
-        }
-      }
+function getColor(label){
+  switch(label){
+    case "Free Delivery": return cssVar('--free');
+    case "$6": return cssVar('--fee-6');
+    case "$6 Prepay": return cssVar('--fee-6-pre');
+    case "$10": return cssVar('--fee-10');
+    case "$10 Prepay": return cssVar('--fee-10-pre');
+    case "$15": return cssVar('--fee-15');
+    case "$15 Prepay": return cssVar('--fee-15-pre');
+    case "$20": return cssVar('--fee-20');
+    case "$20 Prepay": return cssVar('--fee-20-pre');
+    default: return cssVar('--free');
+  }
+}
+function cssVar(name){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || '#f5f5f5';
+}
 
-      /* ZIP -> style info */
-      const ZIP_STYLE = (() => {
-        const m = new Map();
-        ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color:g.color, label:g.label, fee:g.fee, prepay:g.prepay })));
-        return m;
-      })();
+/** Lookup: ZIP -> {color,label,fee,prepay} */
+const ZIP_STYLE = (() => {
+  const m = new Map();
+  ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, label: g.label, fee: g.fee, prepay: g.prepay })));
+  return m;
+})();
 
-      /* Neighborhood (extend as you like) */
-      const ZIP_NEIGHBORHOOD = {
-        "19106":"Old City","19107":"Center City East","19103":"Center City West","19102":"Center City West","19130":"Fairmount / Art Museum",
-        "19123":"Northern Liberties","19125":"Fishtown","19122":"Olde Kensington / Temple","19133":"West Kensington",
-        "19134":"Port Richmond / Kensington","19137":"Bridesburg",
-        "19145":"South Philly (West)","19146":"Graduate Hospital","19147":"Queen Village / Bella Vista","19148":"East Passyunk","19112":"Navy Yard",
-        "19104":"University City","19139":"West Philly","19143":"Cedar Park / SW Philly","19151":"Overbrook","19131":"Wynnefield","19153":"Airport / Eastwick","19142":"Elmwood",
-        "19121":"Brewerytown / Sharswood","19132":"Strawberry Mansion","19140":"Hunting Park","19141":"Logan","19120":"Feltonville / Lawncrest",
-        "19129":"East Falls","19128":"Roxborough / Manayunk","19144":"Germantown","19119":"Mt. Airy","19118":"Chestnut Hill","19150":"West Oak Lane","19138":"East Germantown",
-        "19124":"Frankford","19135":"Tacony","19136":"Holmesburg","19149":"Mayfair","19152":"Rhawnhurst","19111":"Fox Chase","19115":"Bustleton","19116":"Somerton","19114":"Torresdale",
-        "19004":"Bala Cynwyd","19066":"Merion Station","19096":"Wynnewood","19072":"Narberth","19003":"Ardmore","19041":"Haverford","19010":"Bryn Mawr","19085":"Villanova","19035":"Gladwyne",
-        "19082":"Upper Darby","19026":"Drexel Hill","19083":"Havertown","19033":"Folsom","19070":"Swarthmore","19078":"Ridley Park","19076":"Prospect Park","19074":"Norwood","19043":"Morton","19029":"Essington","19127":"Manayunk",
-        "19007":"Bristol","19020":"Bensalem","19021":"Croydon","19027":"Elkins Park","19012":"Cheltenham","19046":"Jenkintown","19038":"Glenside","19095":"Wyncote","19428":"Conshohocken","19444":"Lafayette Hill","19008":"Broomall"
-      };
-      const getNeighborhoodForZip = zip => ZIP_NEIGHBORHOOD[String(zip)] || null;
+/* Neighborhood lookup (extend as needed) */
+const ZIP_NEIGHBORHOOD = {
+  "19106":"Old City","19107":"Center City East","19103":"Center City West","19102":"Center City West","19130":"Fairmount / Art Museum",
+  "19123":"Northern Liberties","19125":"Fishtown","19122":"Olde Kensington / Temple","19133":"West Kensington","19134":"Port Richmond / Kensington","19137":"Bridesburg",
+  "19145":"South Philly (West)","19146":"Graduate Hospital","19147":"Queen Village / Bella Vista","19148":"East Passyunk","19112":"Navy Yard",
+  "19104":"University City","19139":"West Philly","19143":"Cedar Park / SW Philly","19151":"Overbrook","19131":"Wynnefield","19153":"Airport / Eastwick","19142":"Elmwood",
+  "19121":"Brewerytown / Sharswood","19132":"Strawberry Mansion","19140":"Hunting Park","19141":"Logan","19120":"Feltonville / Lawncrest",
+  "19129":"East Falls","19128":"Roxborough / Manayunk","19144":"Germantown","19119":"Mt. Airy","19118":"Chestnut Hill","19150":"West Oak Lane","19138":"East Germantown",
+  "19124":"Frankford","19135":"Tacony","19136":"Holmesburg","19149":"Mayfair","19152":"Rhawnhurst","19111":"Fox Chase","19115":"Bustleton","19116":"Somerton","19114":"Torresdale",
+  "19004":"Bala Cynwyd","19066":"Merion Station","19096":"Wynnewood","19072":"Narberth","19003":"Ardmore","19041":"Haverford","19010":"Bryn Mawr","19085":"Villanova","19035":"Gladwyne",
+  "19082":"Upper Darby","19026":"Drexel Hill","19083":"Havertown","19033":"Folsom","19070":"Swarthmore","19078":"Ridley Park","19076":"Prospect Park","19074":"Norwood","19043":"Morton","19029":"Essington","19127":"Manayunk",
+  "19007":"Bristol","19020":"Bensalem","19021":"Croydon","19027":"Elkins Park","19012":"Cheltenham","19046":"Jenkintown","19038":"Glenside","19095":"Wyncote","19428":"Conshohocken","19444":"Lafayette Hill","19008":"Broomall"
+};
+function getNeighborhoodForZip(zip){ return ZIP_NEIGHBORHOOD[String(zip)] || null; }
 
-      /* Popup */
-      function popupHTML({ zip, label, prepay, neighborhood, color }) {
-        const baseLabel = (label || 'Free Delivery').replace(/\s*Prepay$/, '');
-        const title = neighborhood ? neighborhood : baseLabel;
-        const leftPillText = (label === "Free Delivery" || baseLabel === "Free Delivery") ? "Free Delivery" : baseLabel;
-        const feeDot = `<span class="dm-fee-dot" style="background:${color}"></span>`;
-        return `
-          <div class="dm-popup">
-            <div class="dm-head">
-              <div class="dm-title">${title}</div>
-              <div></div>
-            </div>
-            <div class="dm-body">
-              <div class="dm-rowline">
-                <div class="dm-left">
-                  ${feeDot}
-                  <span class="dm-pill">${leftPillText}${prepay ? '<span class="dm-prepay">Prepay</span>' : ''}</span>
-                </div>
-                <span class="dm-pill dm-zip">${zip}</span>
-              </div>
-            </div>
+/* Minimal popup (neighborhood title, fee pill, prepay pill, zip chip) */
+function popupHTML({ zip, label, prepay, neighborhood, color }) {
+  const baseLabel = (label || 'Free Delivery').replace(/\s*Prepay$/, '');
+  const title = neighborhood ? neighborhood : baseLabel;
+  const leftPillText = (label === "Free Delivery" || baseLabel === "Free Delivery") ? "Free Delivery" : baseLabel;
+  const feeDot = `<span class="dm-fee-dot" style="background:${color}"></span>`;
+  return `
+    <div class="dm-popup">
+      <div class="dm-head">
+        <div class="dm-title">${title}</div>
+        <div></div>
+      </div>
+      <div class="dm-body">
+        <div class="dm-rowline">
+          <div class="dm-left">
+            ${feeDot}
+            <span class="dm-pill">${leftPillText}${prepay ? '<span class="dm-prepay">Prepay</span>' : ''}</span>
           </div>
-        `;
+          <span class="dm-pill dm-zip">${zip}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+let lastHighlighted = null;
+let marker = null;
+let info = null;
+let hoverLabelMarker = null;   // label-only marker for hover
+let activeLegend = null;       // legend spotlight filter
+
+function initMap() {
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 10,
+    center: { lat: 39.9526, lng: -75.1652 }
+  });
+
+  // Map/Satellite control and search placement
+  map.setOptions({
+    mapTypeControl: true,
+    mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT }
+  });
+  map.controls[google.maps.ControlPosition.TOP_LEFT]
+    .push(document.getElementById('searchWrap'));
+
+  info = new google.maps.InfoWindow();
+
+  // ---- Data styling with spotlight support ----
+  map.data.loadGeoJson('zip-map.json', null, () => {
+    function baseOpacity(fee){
+      return (fee >= 20) ? 0.45 :
+             (fee >= 15) ? 0.35 :
+             (fee >= 10) ? 0.30 :
+             (fee >=  6) ? 0.28 : 0.22;  // free
+    }
+    function computeStyle(feature){
+      const zip = getZipFromFeature(feature);
+      const s = ZIP_STYLE.get(String(zip)) || {};
+      const fee = s.fee ?? 0;
+      const label = s.label || "Free Delivery";  // ensure Free Delivery can be spotlighted
+      const color = s.color || getColor(label);
+
+      let fillOpacity = baseOpacity(fee);
+      let strokeColor = color;
+      let strokeWeight = 1.5;
+
+      if (activeLegend && (label !== activeLegend)) {
+        fillOpacity = 0.08;
+        strokeColor = '#c7c7c7';
+        strokeWeight = 1;
+      } else if (activeLegend) {
+        strokeWeight = 2;
       }
+      return { fillColor: color, fillOpacity, strokeColor, strokeWeight };
+    }
+    map.data.setStyle(computeStyle);
+    window.__refreshZoneStyles = () => map.data.setStyle(computeStyle);
+  });
 
-      let lastHighlighted = null;
-      let marker = null;
-      let info = null;
-      let hoverLabelMarker = null;
-      let activeLegend = null;
+  // Click → popup + strong highlight
+  map.data.addListener('click', (e) => {
+    const zip = getZipFromFeature(e.feature);
+    const s = ZIP_STYLE.get(String(zip)) || {};
+    highlightFeature(map, e.feature);
+    const neighborhood = getNeighborhoodForZip(zip);
+    info.setContent(popupHTML({
+      zip,
+      label: s.label || 'Free Delivery',
+      prepay: !!s.prepay,
+      neighborhood,
+      color: s.color || getColor('Free Delivery')
+    }));
+    info.setPosition(e.latLng);
+    info.open(map);
+  });
 
-      function initMap(){
-        console.log('initMap: starting');
+  // Hover: thicken outline + centered ZIP label (label-only marker)
+  map.data.addListener('mouseover', (e) => {
+    const zip = getZipFromFeature(e.feature);
+    map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.34 });
+    const center = centerOfFeature(e.feature) || e.latLng;
+    if (!hoverLabelMarker) {
+      hoverLabelMarker = new google.maps.Marker({
+        map,
+        position: center,
+        clickable: false,
+        zIndex: 9999,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0, strokeWeight: 0 },
+        label: {
+          text: String(zip),
+          color: '#111',
+          fontSize: '12px',
+          fontWeight: '600',
+          fontFamily: '"DM Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
+        },
+        optimized: false
+      });
+    } else {
+      hoverLabelMarker.setPosition(center);
+      hoverLabelMarker.setLabel({
+        text: String(zip),
+        color: '#111',
+        fontSize: '12px',
+        fontWeight: '600',
+        fontFamily: '"DM Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
+      });
+      hoverLabelMarker.setMap(map);
+    }
+  });
+  map.data.addListener('mousemove', (e) => {
+    const center = centerOfFeature(e.feature) || e.latLng;
+    if (hoverLabelMarker && center) hoverLabelMarker.setPosition(center);
+  });
+  map.data.addListener('mouseout', (e) => {
+    if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
+    if (hoverLabelMarker) hoverLabelMarker.setMap(null);
+  });
 
-        const mapEl = document.getElementById('map');
-        const map = new google.maps.Map(mapEl, {
-          center: { lat: 39.9526, lng: -75.1652 },
-          zoom: 12,
-          mapTypeControl: true,
-          streetViewControl: false,
-          fullscreenControl: true
-        });
+  // ---- Interactive legend (requested order) ----
+  const ORDER = ["Free Delivery", "$6", "$6 Prepay", "$10", "$10 Prepay", "$15", "$15 Prepay", "$20", "$20 Prepay"];
+  const groupsByLabel = (() => {
+    const m = new Map();
+    ZIP_GROUPS.forEach(g => m.set(g.label, g));
+    if (!m.has("Free Delivery")) m.set("Free Delivery", { label:"Free Delivery", color:getColor("Free Delivery"), prepay:false, fee:0 });
+    return m;
+  })();
 
-        info = new google.maps.InfoWindow();
+  const legend = document.createElement('div');
+  legend.style.background = '#fff';
+  legend.style.margin = '10px';
+  legend.style.padding = '10px';
+  legend.style.borderRadius = '10px';
+  legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+  legend.style.font = '13px/1.3 "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
 
-        /* ---- Load GeoJSON ONCE and style it ---- */
-        function baseOpacity(fee){
-          return (fee >= 20) ? 0.45 :
-                 (fee >= 15) ? 0.35 :
-                 (fee >= 10) ? 0.30 :
-                 (fee >=  6) ? 0.28 : 0.22;
-        }
-        function computeStyle(feature){
-          const zip = getZipFromFeature(feature);
-          const s = ZIP_STYLE.get(String(zip)) || {};
-          const fee   = s.fee ?? 0;
-          const label = s.label || "Free Delivery";
-          const color = s.color || getColor(label);
+  const title = document.createElement('div');
+  title.style.fontWeight = '700';
+  title.style.marginBottom = '6px';
+  title.textContent = 'Service Areas';
+  legend.appendChild(title);
 
-          let fillOpacity = baseOpacity(fee);
-          let strokeColor = color;
-          let strokeWeight = 1.5;
+  ORDER.forEach(label => {
+    const g = groupsByLabel.get(label);
+    if (!g) return;
 
-          if (activeLegend && (label !== activeLegend)) {
-            fillOpacity = 0.08;
-            strokeColor = '#c7c7c7';
-            strokeWeight = 1;
-          } else if (activeLegend) {
-            strokeWeight = 2;
-          }
-          return { fillColor: color, fillOpacity, strokeColor, strokeWeight };
-        }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('data-label', g.label);
+    btn.style.display = 'flex';
+    btn.style.alignItems = 'center';
+    btn.style.gap = '8px';
+    btn.style.width = '100%';
+    btn.style.margin = '4px 0';
+    btn.style.padding = '6px 8px';
+    btn.style.border = '1px solid rgba(0,0,0,.08)';
+    btn.style.borderRadius = '8px';
+    btn.style.background = '#fff';
+    btn.style.cursor = 'pointer';
+    btn.style.textAlign = 'left';
 
-        map.data.loadGeoJson('zip-map.json', null, () => {
-          map.data.setStyle(computeStyle);
-          window.__refreshZoneStyles = () => map.data.setStyle(computeStyle);
-        });
+    const swatch = document.createElement('span');
+    swatch.style.display = 'inline-block';
+    swatch.style.width = '14px';
+    swatch.style.height = '14px';
+    swatch.style.borderRadius = '3px';
+    swatch.style.background = g.color;
+    swatch.style.border = '1px solid rgba(0,0,0,.12)';
 
-        /* Click → popup + highlight */
-        map.data.addListener('click', (e) => {
-          const zip = getZipFromFeature(e.feature);
-          const s = ZIP_STYLE.get(String(zip)) || {};
-          highlightFeature(map, e.feature);
-          const neighborhood = getNeighborhoodForZip(zip);
-          info.setContent(popupHTML({
-            zip,
-            label: s.label || 'Free Delivery',
-            prepay: !!s.prepay,
-            neighborhood,
-            color: s.color || getColor('Free Delivery')
-          }));
-          info.setPosition(e.latLng);
-          info.open(map);
-        });
+    const baseLabelText = g.label.replace(' Prepay', '');
+    const text = document.createElement('span');
+    text.textContent = baseLabelText;
+    text.style.fontWeight = 600;
 
-        /* Hover: thicker outline + centered ZIP label */
-        map.data.addListener('mouseover', (e) => {
-          const zip = getZipFromFeature(e.feature);
-          map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.34 });
-          const center = centerOfFeature(e.feature) || e.latLng;
-          if (!hoverLabelMarker) {
-            hoverLabelMarker = new google.maps.Marker({
-              map, position:center, clickable:false, zIndex:9999,
-              icon:{ path: google.maps.SymbolPath.CIRCLE, scale:0, strokeWeight:0 },
-              label:{
-                text:String(zip), color:'#111', fontSize:'12px', fontWeight:'600',
-                fontFamily:'"DM Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
-              },
-              optimized:false
-            });
-          } else {
-            hoverLabelMarker.setPosition(center);
-            hoverLabelMarker.setLabel({
-              text:String(zip), color:'#111', fontSize:'12px', fontWeight:'600',
-              fontFamily:'"DM Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif'
-            });
-            hoverLabelMarker.setMap(map);
-          }
-        });
-        map.data.addListener('mousemove', (e) => {
-          const center = centerOfFeature(e.feature) || e.latLng;
-          if (hoverLabelMarker && center) hoverLabelMarker.setPosition(center);
-        });
-        map.data.addListener('mouseout', (e) => {
-          if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
-          if (hoverLabelMarker) hoverLabelMarker.setMap(null);
-        });
+    btn.appendChild(swatch);
+    btn.appendChild(text);
 
-        /* ---- Legend (click to spotlight) ---- */
-        const ORDER = ["Free Delivery", "$6", "$6 Prepay", "$10", "$10 Prepay", "$15", "$15 Prepay", "$20", "$20 Prepay"];
-        const groupsByLabel = (() => {
-          const m = new Map();
-          ZIP_GROUPS.forEach(g => m.set(g.label, g));
-          if (!m.has("Free Delivery")) m.set("Free Delivery", { label:"Free Delivery", color:getColor("Free Delivery"), prepay:false, fee:0 });
-          return m;
-        })();
+    if (g.prepay) {
+      const pill = document.createElement('span');
+      pill.textContent = 'Prepay';
+      pill.style.marginLeft = '6px';
+      pill.style.background = '#fff8e1';
+      pill.style.color = '#8b5e00';
+      pill.style.border = '1px solid #f5d565';
+      pill.style.borderRadius = '999px';
+      pill.style.padding = '0 6px';
+      pill.style.fontSize = '11px';
+      pill.style.fontWeight = '700';
+      btn.appendChild(pill);
+    }
 
-        const legend = document.createElement('div');
-        legend.style.background = '#fff';
-        legend.style.margin = '10px';
-        legend.style.padding = '10px';
-        legend.style.borderRadius = '10px';
-        legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-        legend.style.font = '13px/1.3 "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+    btn.addEventListener('click', () => {
+      const clicked = btn.getAttribute('data-label');
+      activeLegend = (activeLegend === clicked) ? null : clicked;
 
-        const title = document.createElement('div');
-        title.style.fontWeight = '700';
-        title.style.marginBottom = '6px';
-        title.textContent = 'Service Areas';
-        legend.appendChild(title);
+      legend.querySelectorAll('[data-label]').forEach(el => {
+        const isActive = el.getAttribute('data-label') === activeLegend;
+        el.style.outline = isActive ? '2px solid #111827' : 'none';
+        el.style.background = isActive ? 'rgba(0,0,0,0.04)' : '#fff';
+      });
 
-        ORDER.forEach(label => {
-          const g = groupsByLabel.get(label);
-          if (!g) return;
+      if (window.__refreshZoneStyles) window.__refreshZoneStyles();
+      if (typeof clearHighlight === 'function') clearHighlight(map);
+    });
 
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.setAttribute('data-label', g.label);
-          btn.style.display = 'flex';
-          btn.style.alignItems = 'center';
-          btn.style.gap = '8px';
-          btn.style.width = '100%';
-          btn.style.margin = '4px 0';
-          btn.style.padding = '6px 8px';
-          btn.style.border = '1px solid rgba(0,0,0,.08)';
-          btn.style.borderRadius = '8px';
-          btn.style.background = '#fff';
-          btn.style.cursor = 'pointer';
-          btn.style.textAlign = 'left';
+    legend.appendChild(btn);
+  });
 
-          const swatch = document.createElement('span');
-          swatch.style.display = 'inline-block';
-          swatch.style.width = '14px';
-          swatch.style.height = '14px';
-          swatch.style.borderRadius = '3px';
-          swatch.style.background = g.color;
-          swatch.style.border = '1px solid rgba(0,0,0,.12)';
+  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
 
-          const baseLabelText = g.label.replace(' Prepay', '');
-          const text = document.createElement('span');
-          text.textContent = baseLabelText;
-          text.style.fontWeight = 600;
+  // ---- Autocomplete (Philly + South NJ bias) ----
+  const phillySJBounds = new google.maps.LatLngBounds(
+    { lat: 39.35, lng: -75.85 },
+    { lat: 40.40, lng: -74.20 }
+  );
+  const input = document.getElementById('search');
+  const ac = new google.maps.places.Autocomplete(input, {
+    fields: ['geometry','formatted_address','address_components','place_id'],
+    bounds: phillySJBounds,
+    strictBounds: false,
+    types: ['address'],
+    componentRestrictions: { country: ['us'] }
+  });
+  const geocoder = new google.maps.Geocoder();
 
-          btn.appendChild(swatch);
-          btn.appendChild(text);
+  const clearEl = document.getElementById('clearBtn');
+  if (clearEl) {
+    clearEl.addEventListener('click', () => {
+      input.value = '';
+      input.focus();
+      if (marker) { marker.setMap(null); marker = null; }
+      clearHighlight(map);
+      info.close();
+      if (hoverLabelMarker) hoverLabelMarker.setMap(null);
+      activeLegend = null;
+      legend.querySelectorAll('[data-label]').forEach(el => { el.style.outline = 'none'; el.style.background = '#fff'; });
+      if (window.__refreshZoneStyles) window.__refreshZoneStyles();
+    });
+  }
 
-          if (g.prepay) {
-            const pill = document.createElement('span');
-            pill.textContent = 'Prepay';
-            pill.style.marginLeft = '6px';
-            pill.style.background = '#fff8e1';
-            pill.style.color = '#8b5e00';
-            pill.style.border = '1px solid #f5d565';
-            pill.style.borderRadius = '999px';
-            pill.style.padding = '0 6px';
-            pill.style.fontSize = '11px';
-            pill.style.fontWeight = '700';
-            btn.appendChild(pill);
-          }
+// Search handler — camera stays on the address
+ac.addListener('place_changed', async () => {
+  const place = ac.getPlace();
+  let location = place?.geometry?.location || null;
+  const isStreetAddress = (place.address_components || []).some(c => c.types.includes('street_number'));
 
-          btn.addEventListener('click', () => {
-            const clicked = btn.getAttribute('data-label');
-            activeLegend = (activeLegend === clicked) ? null : clicked;
+  if (!location || !isStreetAddress) {
+    try {
+      const q = input.value.trim();
+      const { results } = await geocoder.geocode({
+        address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
+      });
+      if (results && results[0]?.geometry?.location) location = results[0].geometry.location;
+    } catch (_) {}
+  }
+  if (!location) return;
 
-            legend.querySelectorAll('[data-label]').forEach(el => {
-              const isActive = el.getAttribute('data-label') === activeLegend;
-              el.style.outline = isActive ? '2px solid #111827' : 'none';
-              el.style.background = isActive ? 'rgba(0,0,0,0.04)' : '#fff';
-            });
+  if (!marker) marker = new google.maps.Marker({ map, position: location });
+  else marker.setPosition(location);
 
-            if (window.__refreshZoneStyles) window.__refreshZoneStyles();
-            clearHighlight(map);
-            if (hoverLabelMarker) hoverLabelMarker.setMap(null);
-          });
+  // Always pan + zoom manually so we never jump to wrong viewport
+  map.panTo(location);
+  map.setZoom(17);
 
-          legend.appendChild(btn);
-        });
+  const containing = findContainingFeature(map, location);
+  if (containing) {
+    highlightFeature(map, containing);
+    const zip = getZipFromFeature(containing);
+    const s = ZIP_STYLE.get(String(zip)) || {};
+    const neighborhood = getNeighborhoodForZip(zip);
 
-        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
+    info.setContent(popupHTML({
+      zip,
+      label: s.label || 'Free Delivery',
+      prepay: !!s.prepay,
+      neighborhood,
+      color: s.color || getColor('Free Delivery')
+    }));
+    info.setPosition(location);
+    info.open(map);
+  } else {
+    clearHighlight(map);
+    info.setContent(popupHTML({
+      zip: '—',
+      label: 'Free Delivery',
+      prepay: false,
+      neighborhood: null,
+      color: getColor('Free Delivery')
+    }));
+    info.setPosition(location);
+    info.open(map);
+  }
+});
 
-        /* ---- Autocomplete (Philly + South NJ bias) ---- */
-        const phillySJBounds = new google.maps.LatLngBounds(
-          { lat: 39.35, lng: -75.85 },
-          { lat: 40.40, lng: -74.20 }
-        );
-        const input = document.getElementById('search');
-        const ac = new google.maps.places.Autocomplete(input, {
-          fields: ['geometry','formatted_address','address_components','place_id'],
-          bounds: phillySJBounds,
-          strictBounds: false,
-          types: ['address'],
-          componentRestrictions: { country: ['us'] }
-        });
-        const geocoder = new google.maps.Geocoder();
+}
 
-        const clearEl = document.getElementById('clearBtn');
-        if (clearEl) {
-          clearEl.addEventListener('click', () => {
-            input.value = '';
-            input.focus();
-            if (marker) { marker.setMap(null); marker = null; }
-            clearHighlight(map);
-            info.close();
-            if (hoverLabelMarker) hoverLabelMarker.setMap(null);
-            activeLegend = null;
-            legend.querySelectorAll('[data-label]').forEach(el => { el.style.outline = 'none'; el.style.background = '#fff'; });
-            if (window.__refreshZoneStyles) window.__refreshZoneStyles();
-          });
-        }
+// Expose callback globally
+window.initMap = initMap;
 
-        ac.addListener('place_changed', async () => {
-          const place = ac.getPlace();
-          let location = place?.geometry?.location || null;
-          const isStreetAddress = (place.address_components || []).some(c => c.types.includes('street_number'));
-
-          if (!location || !isStreetAddress) {
-            try {
-              const q = input.value.trim();
-              const { results } = await geocoder.geocode({
-                address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
-              });
-              if (results && results[0]?.geometry?.location) location = results[0].geometry.location;
-            } catch (_) {}
-          }
-          if (!location) return;
-
-          if (!marker) marker = new google.maps.Marker({ map, position: location });
-          else marker.setPosition(location);
-
-          // Always pan + zoom manually so we never jump to a wrong viewport
-          map.panTo(location);
-          map.setZoom(17);
-
-          const containing = findContainingFeature(map, location);
-          if (containing) {
-            highlightFeature(map, containing);
-            const zip = getZipFromFeature(containing);
-            const s = ZIP_STYLE.get(String(zip)) || {};
-            const neighborhood = getNeighborhoodForZip(zip);
-
-            info.setContent(popupHTML({
-              zip,
-              label: s.label || 'Free Delivery',
-              prepay: !!s.prepay,
-              neighborhood,
-              color: s.color || getColor('Free Delivery')
-            }));
-            info.setPosition(location);
-            info.open(map);
-          } else {
-            clearHighlight(map);
-            info.setContent(popupHTML({
-              zip: '—', label:'Free Delivery', prepay:false, neighborhood:null, color:getColor('Free Delivery')
-            }));
-            info.setPosition(location);
-            info.open(map);
-          }
-        });
-      }
-
-      /* Expose callback for Maps loader */
-      window.initMap = initMap;
-
-      /* ---------- Helpers ---------- */
-      function getZipFromFeature(feature){
-        return feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
-      }
-      function highlightFeature(map, feature){
-        clearHighlight(map);
-        lastHighlighted = feature;
-        map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 4, zIndex: 1000 });
-      }
-      function clearHighlight(map){
-        if (lastHighlighted){ map.data.revertStyle(lastHighlighted); lastHighlighted = null; }
-      }
-      function findContainingFeature(map, latLng){
-        let found = null;
-        map.data.forEach(f => { if (featureContainsLatLng(f, latLng)) found = f; });
-        return found;
-      }
-      function featureContainsLatLng(feature, latLng){
-        const geom = feature.getGeometry();
-        let inside = false;
-        const walk = (g) => {
-          const t = g.getType();
-          if (t === 'Polygon'){
-            const paths = g.getArray().map(r => r.getArray());
-            const poly = new google.maps.Polygon({ paths });
-            if (google.maps.geometry.poly.containsLocation(latLng, poly)) inside = true;
-          } else if (t === 'MultiPolygon' || t === 'GeometryCollection'){
-            g.getArray().forEach(walk);
-          }
-        };
-        walk(geom);
-        return inside;
-      }
-      function centerOfFeature(feature){
-        const bounds = new google.maps.LatLngBounds();
-        let has = false;
-        const walk = (g) => {
-          const t = g.getType();
-          if (t === 'Polygon'){
-            g.getArray().forEach(ring => ring.getArray().forEach(pt => { bounds.extend(pt); has = true; }));
-          } else if (t === 'MultiPolygon' || t === 'GeometryCollection'){
-            g.getArray().forEach(walk);
-          } else if (t === 'Point'){
-            bounds.extend(g.get()); has = true;
-          }
-        };
-        walk(feature.getGeometry());
-        return has ? bounds.getCenter() : null;
-      }
+/* Helpers */
+function getZipFromFeature(feature){
+  return feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
+}
+function highlightFeature(map, feature){
+  clearHighlight(map);
+  lastHighlighted = feature;
+  map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 4, zIndex: 1000 });
+}
+function clearHighlight(map){
+  if (lastHighlighted){ map.data.revertStyle(lastHighlighted); lastHighlighted = null; }
+}
+function findContainingFeature(map, latLng){
+  let found = null;
+  map.data.forEach(f => { if (featureContainsLatLng(f, latLng)) found = f; });
+  return found;
+}
+function featureContainsLatLng(feature, latLng){
+  const geom = feature.getGeometry();
+  let inside = false;
+  const walk = (g) => {
+    const t = g.getType();
+    if (t === 'Polygon'){
+      const paths = g.getArray().map(r => r.getArray());
+      const poly = new google.maps.Polygon({ paths });
+      if (google.maps.geometry.poly.containsLocation(latLng, poly)) inside = true;
+    } else if (t === 'MultiPolygon' || t === 'GeometryCollection'){
+      g.getArray().forEach(walk);
+    }
+  };
+  walk(geom);
+  return inside;
+}
+/* Bounds center as robust centroid */
+function centerOfFeature(feature){
+  const bounds = new google.maps.LatLngBounds();
+  let has = false;
+  const walk = (g) => {
+    const t = g.getType();
+    if (t === 'Polygon'){
+      g.getArray().forEach(ring => ring.getArray().forEach(pt => { bounds.extend(pt); has = true; }));
+    } else if (t === 'MultiPolygon' || t === 'GeometryCollection'){
+      g.getArray().forEach(walk);
+    } else if (t === 'Point'){
+      bounds.extend(g.get()); has = true;
+    }
+  };
+  walk(feature.getGeometry());
+  return has ? bounds.getCenter() : null;
+}
     </script>
 
     <!-- Loader: Maps + Places + Geometry -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&libraries=places,geometry&v=weekly"></script>
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
+    </script>
   </head>
 
   <body>
-    <!-- Header: logo + search -->
-    <header id="dm-header">
-      <div id="dm-header-inner">
-        <div id="dm-logo">
-          <!-- Inline SVG logo -->
-          <svg width="1000" height="153" viewBox="0 0 1000 153" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Dankmates">
-            <!-- (trimmed for brevity – keep your full SVG paths here) -->
-            <path d="M18.0654 137.435L0.785156 110.031H39.8992L5.22196 59.4103L29.5076 42.1778L75.5104 110.031V4.12256H103.649V110.031L150.236 42.1778L171.953 59.4103L137.859 110.031H180.826L162.612 137.435H18.0654Z" fill="white"/>
-          </svg>
-        </div>
-
-        <div id="searchWrap">
-          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
-          </svg>
-          <input id="search" type="text" placeholder="Search an address (Philly + South NJ)" />
-          <button id="clearBtn" title="Clear">✕</button>
-        </div>
-      </div>
-    </header>
+    <!-- Search control (placed in TOP_LEFT by initMap) -->
+    <div id="searchWrap">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
+      </svg>
+      <input id="search" type="text" placeholder="Search an address (Philly + South NJ)" />
+      <button id="clearBtn" title="Clear">✕</button>
+    </div>
 
     <div id="map"></div>
   </body>
