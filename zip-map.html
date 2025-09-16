@@ -2,282 +2,264 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Zip Code Map</title>
+    <title>Dankmates Delivery Zones</title>
     <style>
       html, body { height: 100%; margin: 0; }
       #map { height: 100%; width: 100%; }
-
-      /* Search box styling */
       #search {
-        position: absolute;
-        z-index: 5;
-        top: 12px;
-        left: 12px;
-        width: 320px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        position: absolute; z-index: 5; top: 12px; left: 12px;
+        width: 320px; padding: 10px 12px; border-radius: 8px;
+        border: 1px solid #ccc; box-shadow: 0 1px 4px rgba(0,0,0,.15);
         font-size: 14px;
       }
     </style>
 
     <script>
-      /***************
-       * 1) EDIT THESE GROUPS
-       * - Change names, colors, fees, and ZIP arrays to match your delivery zones.
-       * - Any ZIP not listed in any group will be styled gray by default.
-       * - Fees are distance/difficulty tiers from City Hall: 0, 6, 10, 15, 20
-       ***************/
-      const ZIP_GROUPS = [
-        { name: "Philly Core",              color: "#1f77b4", fee: 0,   // ADDED fee
-          zips: ["19102","19103","19104","19106","19107","19123","19130","19146","19147"] },
+/** DELIVERY ZONES — with fee tiers from City Hall (0, 6, 10, 15, 20) */
+const ZIP_GROUPS = [
+  // — PHILADELPHIA (191xx) —
+  { name: "Center City",            color: "#1f77b4", fee: 0,
+    zips: ["19102","19103","19106","19107"] },
 
-        { name: "West/Southwest",           color: "#2ca02c", fee: 6,   // ADDED fee
-          zips: ["19131","19139","19143","19151","19153","19142"] },
+  { name: "University City",        color: "#17becf", fee: 0,
+    zips: ["19104","19139"] },
 
-        { name: "NW / Rox / Chestnut Hill", color: "#d62728", fee: 15,  // ADDED fee
-          zips: ["19118","19119","19128","19129","19144","19150"] },
+  { name: "South Philly",           color: "#ff7f0e", fee: 6,
+    zips: ["19145","19146","19147","19148"] },
 
-        { name: "North/Northeast",          color: "#ff7f0e", fee: 20,  // ADDED fee (includes Far NE)
-          zips: ["19111","19114","19115","19116","19124","19135","19136","19149","19152","19154"] },
-      ];
+  { name: "River Wards",            color: "#d62728", fee: 6,
+    zips: ["19122","19123","19124","19125","19133","19134"] },
 
-      /** Fast lookup: ZIP -> {color, name} (don’t edit) */
-      const ZIP_STYLE = (() => {
-        const m = new Map();
-        ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, name: g.name })));
-        return m;
-      })();
+  { name: "West & SW Philly",       color: "#2ca02c", fee: 6,
+    zips: ["19131","19143","19151"] },
 
-      // Keep a reference to last highlighted polygon + search marker + infowindow
-      let lastHighlighted = null;
-      let marker = null;
-      let info = null;
+  { name: "Airport / Navy Yard",    color: "#e377c2", fee: 10,
+    zips: ["19112","19153"] },
 
-      /***************
-       * 2) INIT THE MAP
-       ***************/
-      function initMap() {
-        const map = new google.maps.Map(document.getElementById("map"), {
-          zoom: 10,
-          center: { lat: 39.9526, lng: -75.1652 } // Philadelphia
-        });
+  { name: "North Philly",           color: "#9467bd", fee: 10,
+    zips: ["19121","19130","19132","19140","19141","19150"] },
 
-        info = new google.maps.InfoWindow();
+  { name: "Northeast Core",         color: "#7f7f7f", fee: 10,
+    zips: ["19124","19126","19137","19138"] },
 
-        /***************
-         * 3) LOAD YOUR DATA
-         * If you rename your data file, change 'zip-map.json' here.
-         ***************/
-        map.data.loadGeoJson('zip-map.json', null, () => {
-          // Color polygons by group (+ optional opacity by fee)
-          map.data.setStyle(feature => {
-            const zip = feature.getProperty('ZCTA5CE20')
-                      || feature.getProperty('ZCTA5CE10')
-                      || feature.getProperty('GEOID');
-            const s = ZIP_STYLE.get(String(zip));
-            const groupObj = ZIP_GROUPS.find(g => g.name === (s?.name));
-            const fee = groupObj?.fee ?? 0;
+  { name: "Northwest (Rox/CH/Manayunk)", color: "#8c564b", fee: 15,
+    zips: ["19118","19119","19128","19129","19144"] },
 
-            // ADDED: slightly higher opacity for higher fee tiers (optional visual cue)
-            const opacity = fee >= 20 ? 0.45 : fee >= 15 ? 0.35 : fee >= 10 ? 0.30 : fee >= 6 ? 0.28 : 0.25;
+  { name: "Far Northeast",          color: "#bcbd22", fee: 20,
+    zips: ["19111","19114","19115","19116","19135","19136","19149","19152","19154"] },
 
-            return {
-              fillColor: s ? s.color : '#999999',
-              fillOpacity: opacity,
-              strokeColor: s ? s.color : '#666666',
-              strokeWeight: 1
-            };
-          });
-        });
+  // — INNER PA SUBURBS (190xx) —
+  { name: "Main Line",              color: "#2b8a3e", fee: 15,
+    zips: ["19003","19004","19010","19041","19066","19072","19085","19096","19035"] },
 
-        // Click: show ZIP + group + fee at clicked location (UPDATED)
-        map.data.addListener('click', (e) => {
-          const zip = getZipFromFeature(e.feature);
-          const s   = ZIP_STYLE.get(String(zip));
-          const groupName = s?.name || 'Ungrouped';
-          const fee = (() => {
-            const g = ZIP_GROUPS.find(x => x.name === groupName);
-            return (g?.fee ?? 0);
-          })();
+  { name: "Montco NE Burbs",        color: "#228be6", fee: 10,
+    zips: ["19012","19027","19038","19046"] },
 
-          info.setContent(
-            `<div>
-               <b>ZIP:</b> ${zip}<br/>
-               <b>Group:</b> ${groupName}<br/>
-               <b>Delivery fee:</b> $${fee}
-             </div>`
-          );
-          info.setPosition(e.latLng);
-          info.open(map);
-        });
+  { name: "Lower Bucks",            color: "#ffa94d", fee: 20,
+    zips: ["19007","19020","19021"] },
 
-        /***************
-         * 4) LEGEND (auto-built from ZIP_GROUPS) — UPDATED to show fees
-         ***************/
-        const legend = document.createElement('div');
-        legend.style.background = '#fff';
-        legend.style.margin = '10px';
-        legend.style.padding = '8px 10px';
-        legend.style.borderRadius = '8px';
-        legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-        legend.innerHTML = '<b>Service Areas</b><br/>' +
-          ZIP_GROUPS.map(g => `
-            <div style="display:flex;align-items:center;margin:4px 0;">
-              <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
-              ${g.name} <span style="color:#555">&nbsp;($${g.fee})</span>
-            </div>`).join('');
-        map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
+  { name: "Delco Inner Ring",       color: "#fa5252", fee: 10,
+    zips: [
+      "19022","19023","19026","19029","19032","19033","19036","19043","19050",
+      "19064","19070","19074","19076","19078","19079","19081","19082","19083","19094"
+    ] },
 
-        /***************
-         * 5) SEARCH BAR (Autocomplete)
-         * - Requires Places API enabled for your key
-         * - We also use the geometry library for point-in-polygon test
-         ***************/
-        const input = document.getElementById('search');
+  // — PO/Business ZIPs (often no polygons) —
+  { name: "Downtown PO/Business ZIPs", color: "#495057", fee: 0,
+    zips: [
+      "19019","19092","19093","19099","19101","19105","19108","19109","19110",
+      "19155","19160","19161","19162","19170","19171","19172","19173","19175",
+      "19176","19177","19178","19179","19181","19182","19183","19184","19185",
+      "19187","19188","19190","19191","19192","19193","19194","19195","19196",
+      "19197","19244","19255"
+    ] }
+];
 
-        // Covers Philly, Delco, Montco, Bucks, Chester, Camden, Gloucester, Burlington, Atlantic, Salem
-        const phillySJBounds = new google.maps.LatLngBounds(
-          // SW corner: just below Salem County & Chester County
-          { lat: 39.35, lng: -75.85 },
-          // NE corner: above Bucks County and Burlington County, east to Atlantic City area
-          { lat: 40.40, lng: -74.20 }
-        );
+/** Fast lookup: ZIP -> { color, name } */
+const ZIP_STYLE = (() => {
+  const m = new Map();
+  ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, name: g.name })));
+  return m;
+})();
 
-        const ac = new google.maps.places.Autocomplete(document.getElementById('search'), {
-          fields: ['geometry', 'formatted_address'],
-          bounds: phillySJBounds,
-          strictBounds: false,           // bias but still allow results outside the box
-          // types: ['address'],         // OPTIONAL: uncomment to only suggest street addresses
-          componentRestrictions: { country: ['us'] }
-        });
+let lastHighlighted = null;
+let marker = null;
+let info = null;
 
-        ac.addListener('place_changed', () => {
-          const place = ac.getPlace();
-          if (!place.geometry || !place.geometry.location) return;
+function initMap() {
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 10,
+    center: { lat: 39.9526, lng: -75.1652 } // City Hall-ish
+  });
 
-          const latLng = place.geometry.location;
+  info = new google.maps.InfoWindow();
 
-          // Drop or move a marker
-          if (!marker) marker = new google.maps.Marker({ map, position: latLng });
-          else marker.setPosition(latLng);
+  // Load polygons + style by group + opacity by fee
+  map.data.loadGeoJson('zip-map.json', null, () => {
+    map.data.setStyle(feature => {
+      const zip = feature.getProperty('ZCTA5CE20')
+                || feature.getProperty('ZCTA5CE10')
+                || feature.getProperty('GEOID');
+      const s = ZIP_STYLE.get(String(zip));
+      const groupObj = ZIP_GROUPS.find(g => g.name === (s?.name));
+      const fee = groupObj?.fee ?? 0;
+      // Higher fee → slightly darker fill
+      const opacity =
+        fee >= 20 ? 0.45 :
+        fee >= 15 ? 0.35 :
+        fee >= 10 ? 0.30 :
+        fee >=  6 ? 0.28 : 0.25;
 
-          map.panTo(latLng);
-          map.setZoom(13);
+      return {
+        fillColor: s ? s.color : "#999999",
+        fillOpacity: opacity,
+        strokeColor: s ? s.color : "#666666",
+        strokeWeight: 1
+      };
+    });
+  });
 
-          // Which polygon (ZIP) contains this point?
-          const containing = findContainingFeature(map, latLng);
-          if (containing) {
-            highlightFeature(map, containing);
-            const zip = getZipFromFeature(containing);
-            const s   = ZIP_STYLE.get(String(zip));
-            const groupName = s?.name || 'Ungrouped';
-            const fee = (() => {
-              const g = ZIP_GROUPS.find(x => x.name === groupName);
-              return (g?.fee ?? 0);
-            })();
+  // Click → popup with ZIP + group + fee
+  map.data.addListener('click', (e) => {
+    const zip = getZipFromFeature(e.feature);
+    const s = ZIP_STYLE.get(String(zip));
+    const groupName = s?.name || "Ungrouped";
+    const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
+    info.setContent(`<div><b>ZIP:</b> ${zip}<br/><b>Group:</b> ${groupName}<br/><b>Delivery fee:</b> $${fee}</div>`);
+    info.setPosition(e.latLng);
+    info.open(map);
+  });
 
-            info.setContent(
-              `<div style="min-width:220px">
-                 <div><b>Address:</b> ${place.formatted_address || '—'}</div>
-                 <div><b>ZIP:</b> ${zip}</div>
-                 <div><b>Group:</b> ${groupName}</div>
-                 <div><b>Delivery fee:</b> $${fee}</div>
-               </div>`
-            );
-            info.open({ map, position: latLng });
+  // Legend (shows fees)
+  const legend = document.createElement('div');
+  legend.style.background = '#fff';
+  legend.style.margin = '10px';
+  legend.style.padding = '8px 10px';
+  legend.style.borderRadius = '8px';
+  legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+  legend.innerHTML = '<b>Service Areas</b><br/>' +
+    ZIP_GROUPS.map(g => `
+      <div style="display:flex;align-items:center;margin:4px 0;">
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
+        ${g.name} <span style="color:#555">&nbsp;($${g.fee})</span>
+      </div>`).join('');
+  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
 
-            const b = getFeatureBounds(containing);
-            if (b) map.fitBounds(b);
-          } else {
-            clearHighlight(map);
-            info.setContent(`<div><b>Address:</b> ${place.formatted_address || '—'}<br/>Not in a mapped ZIP.</div>`);
-            info.open({ map, position: latLng });
-          }
-        });
-      }
+  // --- Search bias: Philly + South NJ counties ---
+  const phillySJBounds = new google.maps.LatLngBounds(
+    { lat: 39.35, lng: -75.85 }, // SW (below Salem/Chester)
+    { lat: 40.40, lng: -74.20 }  // NE (above Bucks / toward AC)
+  );
 
-      /***************
-       * Helpers (no edits needed)
-       ***************/
-      function getZipFromFeature(feature) {
-        return feature.getProperty('ZCTA5CE20')
-            || feature.getProperty('ZCTA5CE10')
-            || feature.getProperty('GEOID');
-      }
-      function highlightFeature(map, feature) {
-        clearHighlight(map);
-        lastHighlighted = feature;
-        map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 2 });
-      }
-      function clearHighlight(map) {
-        if (lastHighlighted) {
-          map.data.revertStyle(lastHighlighted);
-          lastHighlighted = null;
-        }
-      }
-      function findContainingFeature(map, latLng) {
-        let found = null;
-        map.data.forEach(feature => {
-          if (featureContainsLatLng(feature, latLng)) found = feature;
-        });
-        return found;
-      }
-      // Use geometry library to test point-in-polygon
-      function featureContainsLatLng(feature, latLng) {
-        const geom = feature.getGeometry();
-        let inside = false;
-        const walk = (g) => {
-          const type = g.getType();
-          if (type === 'Polygon') {
-            const paths = g.getArray().map(ring => ring.getArray());
-            const poly = new google.maps.Polygon({ paths });
-            if (google.maps.geometry.poly.containsLocation(latLng, poly)) inside = true;
-          } else if (type === 'MultiPolygon') {
-            g.getArray().forEach(p => walk(p));
-          } else if (type === 'GeometryCollection') {
-            g.getArray().forEach(x => walk(x));
-          }
-        };
-        walk(geom);
-        return inside;
-      }
-      function getFeatureBounds(feature) {
-        const bounds = new google.maps.LatLngBounds();
-        let has = false;
-        const geom = feature.getGeometry();
-        const walk = (g) => {
-          const t = g.getType();
-          if (t === 'Polygon' || t === 'LineString') {
-            g.getArray().forEach(path => {
-              (path.getArray ? path.getArray() : [path]).forEach(pt => {
-                bounds.extend(pt); has = true;
-              });
-            });
-          } else if (t === 'MultiPolygon' || t === 'MultiLineString' || t === 'GeometryCollection') {
-            g.getArray().forEach(walk);
-          } else if (t === 'Point') {
-            bounds.extend(g.get()); has = true;
-          }
-        };
-        walk(geom);
-        return has ? bounds : null;
-      }
+  const input = document.getElementById('search');
+  const ac = new google.maps.places.Autocomplete(input, {
+    fields: ['geometry', 'formatted_address'],
+    bounds: phillySJBounds,
+    strictBounds: false,
+    // types: ['address'], // ← uncomment to restrict suggestions to street addresses only
+    componentRestrictions: { country: ['us'] }
+  });
+
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
+    if (!place.geometry || !place.geometry.location) return;
+
+    const latLng = place.geometry.location;
+    if (!marker) marker = new google.maps.Marker({ map, position: latLng });
+    else marker.setPosition(latLng);
+
+    map.panTo(latLng);
+    map.setZoom(13);
+
+    const containing = findContainingFeature(map, latLng);
+    if (containing) {
+      highlightFeature(map, containing);
+      const zip = getZipFromFeature(containing);
+      const s = ZIP_STYLE.get(String(zip));
+      const groupName = s?.name || "Ungrouped";
+      const fee = (ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0);
+
+      info.setContent(
+        `<div style="min-width:220px">
+           <div><b>Address:</b> ${place.formatted_address || '—'}</div>
+           <div><b>ZIP:</b> ${zip}</div>
+           <div><b>Group:</b> ${groupName}</div>
+           <div><b>Delivery fee:</b> $${fee}</div>
+         </div>`
+      );
+      info.open({ map, position: latLng });
+
+      const b = getFeatureBounds(containing);
+      if (b) map.fitBounds(b);
+    } else {
+      clearHighlight(map);
+      info.setContent(`<div><b>Address:</b> ${place.formatted_address || '—'}<br/>Not in a mapped ZIP.</div>`);
+      info.open({ map, position: latLng });
+    }
+  });
+}
+
+/* Helpers */
+function getZipFromFeature(feature) {
+  return feature.getProperty('ZCTA5CE20')
+      || feature.getProperty('ZCTA5CE10')
+      || feature.getProperty('GEOID');
+}
+function highlightFeature(map, feature) {
+  clearHighlight(map);
+  lastHighlighted = feature;
+  map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 2 });
+}
+function clearHighlight(map) {
+  if (lastHighlighted) { map.data.revertStyle(lastHighlighted); lastHighlighted = null; }
+}
+function findContainingFeature(map, latLng) {
+  let found = null;
+  map.data.forEach(f => { if (featureContainsLatLng(f, latLng)) found = f; });
+  return found;
+}
+function featureContainsLatLng(feature, latLng) {
+  const geom = feature.getGeometry();
+  let inside = false;
+  const walk = (g) => {
+    const t = g.getType();
+    if (t === 'Polygon') {
+      const paths = g.getArray().map(r => r.getArray());
+      const poly = new google.maps.Polygon({ paths });
+      if (google.maps.geometry.poly.containsLocation(latLng, poly)) inside = true;
+    } else if (t === 'MultiPolygon') {
+      g.getArray().forEach(walk);
+    } else if (t === 'GeometryCollection') {
+      g.getArray().forEach(walk);
+    }
+  };
+  walk(geom);
+  return inside;
+}
+function getFeatureBounds(feature) {
+  const bounds = new google.maps.LatLngBounds(); let has = false;
+  const walk = (g) => {
+    const t = g.getType();
+    if (t === 'Polygon' || t === 'LineString') {
+      g.getArray().forEach(path => {
+        (path.getArray ? path.getArray() : [path]).forEach(pt => { bounds.extend(pt); has = true; });
+      });
+    } else if (t === 'MultiPolygon' || t === 'MultiLineString' || t === 'GeometryCollection') {
+      g.getArray().forEach(walk);
+    } else if (t === 'Point') { bounds.extend(g.get()); has = true; }
+  };
+  walk(feature.getGeometry());
+  return has ? bounds : null;
+}
     </script>
 
-    <!-- 6) MODERN LOADER
-         - Replace YOUR_API_KEY if needed with your working key
-         - Ensure Places API is enabled
-         - libraries=places,geometry for search + point-in-polygon
-         - No onload attribute on <body> -->
+    <!-- Modern loader: Maps + Places + Geometry -->
     <script async defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
     </script>
   </head>
 
   <body>
-    <!-- 7) SEARCH INPUT (rename placeholder text if you like) -->
     <input id="search" type="text" placeholder="Search address…" />
     <div id="map"></div>
   </body>
