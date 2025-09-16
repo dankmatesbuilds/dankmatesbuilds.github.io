@@ -6,9 +6,28 @@
     <style>
       html, body { height: 100%; margin: 0; }
       #map { height: 100%; width: 100%; }
+
+      /* Search box styling */
+      #search {
+        position: absolute;
+        z-index: 5;
+        top: 12px;
+        left: 12px;
+        width: 320px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+        font-size: 14px;
+      }
     </style>
+
     <script>
-      /** 1) Groups, colors, and ZIP lists */
+      /***************
+       * 1) EDIT THESE GROUPS
+       * - Change names, colors, and ZIP arrays to match your delivery zones.
+       * - Any ZIP not listed in any group will be styled gray by default.
+       ***************/
       const ZIP_GROUPS = [
         { name: "Philly Core", color: "#1f77b4",
           zips: ["19102","19103","19104","19106","19107","19123","19130","19146","19147"] },
@@ -20,50 +39,61 @@
           zips: ["19118","19119","19128","19129","19144","19150"] },
       ];
 
-      /** Fast lookup: ZIP -> {color, name} */
+      /** Fast lookup: ZIP -> {color, name} (don’t edit) */
       const ZIP_STYLE = (() => {
         const m = new Map();
         ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, name: g.name })));
         return m;
       })();
 
-      /** 2) initMap (global so the loader can call it) */
+      // Keep a reference to last highlighted polygon + search marker + infowindow
+      let lastHighlighted = null;
+      let marker = null;
+      let info = null;
+
+      /***************
+       * 2) INIT THE MAP (no edits needed here)
+       ***************/
       function initMap() {
         const map = new google.maps.Map(document.getElementById("map"), {
           zoom: 10,
           center: { lat: 39.9526, lng: -75.1652 } // Philadelphia
         });
 
-        // Load GeoJSON
+        info = new google.maps.InfoWindow();
+
+        /***************
+         * 3) LOAD YOUR DATA
+         * If you rename your data file, change 'zip-map.json' here.
+         ***************/
         map.data.loadGeoJson('zip-map.json', null, () => {
-          // Style polygons by group color
+          // Color polygons by group
           map.data.setStyle(feature => {
             const zip = feature.getProperty('ZCTA5CE20')
                       || feature.getProperty('ZCTA5CE10')
                       || feature.getProperty('GEOID');
-            const style = ZIP_STYLE.get(String(zip));
+            const s = ZIP_STYLE.get(String(zip));
             return {
-              fillColor: style ? style.color : '#999999',
+              fillColor: s ? s.color : '#999999',
               fillOpacity: 0.25,
-              strokeColor: style ? style.color : '#666666',
+              strokeColor: s ? s.color : '#666666',
               strokeWeight: 1
             };
           });
         });
 
-        // Click popup: ZIP + Group name
-        const info = new google.maps.InfoWindow();
+        // Click: show ZIP + group at clicked location
         map.data.addListener('click', (e) => {
-          const zip = e.feature.getProperty('ZCTA5CE20')
-                    || e.feature.getProperty('ZCTA5CE10')
-                    || e.feature.getProperty('GEOID');
+          const zip = getZipFromFeature(e.feature);
           const group = ZIP_STYLE.get(String(zip))?.name || 'Ungrouped';
           info.setContent(`<div><b>ZIP:</b> ${zip}<br/><b>Group:</b> ${group}</div>`);
           info.setPosition(e.latLng);
           info.open(map);
         });
 
-        // 3) Legend (top-right)
+        /***************
+         * 4) LEGEND (auto-built from ZIP_GROUPS)
+         ***************/
         const legend = document.createElement('div');
         legend.style.background = '#fff';
         legend.style.margin = '10px';
@@ -77,15 +107,148 @@
               ${g.name}
             </div>`).join('');
         map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
+
+        /***************
+         * 5) SEARCH BAR (Autocomplete)
+         * - Requires Places API enabled for your key
+         * - We also use the geometry library for point-in-polygon test
+         ***************/
+        const input = document.getElementById('search');
+        // Covers Philly, Delco, Montco, Bucks, Chester, Camden, Gloucester, Burlington, Atlantic, Salem
+const phillySJBounds = new google.maps.LatLngBounds(
+  // SW corner: just below Salem County & Chester County
+  { lat: 39.35, lng: -75.85 },
+  // NE corner: above Bucks County and Burlington County, east to Atlantic City area
+  { lat: 40.40, lng: -74.20 }
+);
+
+const ac = new google.maps.places.Autocomplete(document.getElementById('search'), {
+  fields: ['geometry', 'formatted_address'],
+  bounds: phillySJBounds,
+  strictBounds: false, // bias but still allow results outside the box
+  componentRestrictions: { country: ['us'] }
+});
+
+
+        ac.addListener('place_changed', () => {
+          const place = ac.getPlace();
+          if (!place.geometry || !place.geometry.location) return;
+
+          const latLng = place.geometry.location;
+
+          // Drop or move a marker
+          if (!marker) marker = new google.maps.Marker({ map, position: latLng });
+          else marker.setPosition(latLng);
+
+          map.panTo(latLng);
+          map.setZoom(13);
+
+          // Which polygon (ZIP) contains this point?
+          const containing = findContainingFeature(map, latLng);
+          if (containing) {
+            highlightFeature(map, containing);
+            const zip = getZipFromFeature(containing);
+            const group = ZIP_STYLE.get(String(zip))?.name || 'Ungrouped';
+            info.setContent(
+              `<div style="min-width:220px">
+                 <div><b>Address:</b> ${place.formatted_address || '—'}</div>
+                 <div><b>ZIP:</b> ${zip}</div>
+                 <div><b>Group:</b> ${group}</div>
+               </div>`
+            );
+            info.open({ map, position: latLng });
+
+            const b = getFeatureBounds(containing);
+            if (b) map.fitBounds(b);
+          } else {
+            clearHighlight(map);
+            info.setContent(`<div><b>Address:</b> ${place.formatted_address || '—'}<br/>Not in a mapped ZIP.</div>`);
+            info.open({ map, position: latLng });
+          }
+        });
+      }
+
+      /***************
+       * Helpers (no edits needed)
+       ***************/
+      function getZipFromFeature(feature) {
+        return feature.getProperty('ZCTA5CE20')
+            || feature.getProperty('ZCTA5CE10')
+            || feature.getProperty('GEOID');
+      }
+      function highlightFeature(map, feature) {
+        clearHighlight(map);
+        lastHighlighted = feature;
+        map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 2 });
+      }
+      function clearHighlight(map) {
+        if (lastHighlighted) {
+          map.data.revertStyle(lastHighlighted);
+          lastHighlighted = null;
+        }
+      }
+      function findContainingFeature(map, latLng) {
+        let found = null;
+        map.data.forEach(feature => {
+          if (featureContainsLatLng(feature, latLng)) found = feature;
+        });
+        return found;
+      }
+      // Use geometry library to test point-in-polygon
+      function featureContainsLatLng(feature, latLng) {
+        const geom = feature.getGeometry();
+        let inside = false;
+        const walk = (g) => {
+          const type = g.getType();
+          if (type === 'Polygon') {
+            const paths = g.getArray().map(ring => ring.getArray());
+            const poly = new google.maps.Polygon({ paths });
+            if (google.maps.geometry.poly.containsLocation(latLng, poly)) inside = true;
+          } else if (type === 'MultiPolygon') {
+            g.getArray().forEach(p => walk(p));
+          } else if (type === 'GeometryCollection') {
+            g.getArray().forEach(x => walk(x));
+          }
+        };
+        walk(geom);
+        return inside;
+      }
+      function getFeatureBounds(feature) {
+        const bounds = new google.maps.LatLngBounds();
+        let has = false;
+        const geom = feature.getGeometry();
+        const walk = (g) => {
+          const t = g.getType();
+          if (t === 'Polygon' || t === 'LineString') {
+            g.getArray().forEach(path => {
+              (path.getArray ? path.getArray() : [path]).forEach(pt => {
+                bounds.extend(pt); has = true;
+              });
+            });
+          } else if (t === 'MultiPolygon' || t === 'MultiLineString' || t === 'GeometryCollection') {
+            g.getArray().forEach(walk);
+          } else if (t === 'Point') {
+            bounds.extend(g.get()); has = true;
+          }
+        };
+        walk(geom);
+        return has ? bounds : null;
       }
     </script>
 
-    <!-- 4) Modern Google Maps loader (no onload on <body>) -->
+    <!-- 6) MODERN LOADER
+         - Replace YOUR_API_KEY with your real key
+         - Make sure Places API is enabled
+         - Add libraries=places,geometry for search + point-in-polygon
+         - Remove any onload="initMap()" from <body> -->
     <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async">
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
     </script>
   </head>
+
   <body>
+    <!-- 7) SEARCH INPUT (you can rename placeholder text) -->
+    <input id="search" type="text" placeholder="Search address…" />
     <div id="map"></div>
   </body>
 </html>
