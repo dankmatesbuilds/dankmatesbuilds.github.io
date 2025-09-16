@@ -196,10 +196,9 @@ let hoverLabelMarker = null;   // label-only marker for hover
 let activeLegend = null;       // legend spotlight filter
 
 function initMap(){
-  console.log('initMap: starting (minimal)');
+  console.log('initMap: starting (fixed)');
 
   const mapEl = document.getElementById('map');
-  // Visual check that the element is actually on the page and sized
   console.log('mapEl size:', mapEl?.offsetWidth, mapEl?.offsetHeight);
 
   const map = new google.maps.Map(mapEl, {
@@ -210,13 +209,20 @@ function initMap(){
     fullscreenControl: true
   });
 
-  // Log when tiles arrive
   google.maps.event.addListenerOnce(map, 'tilesloaded', () => {
     console.log('tilesloaded: base map visible');
   });
-}
-window.initMap = initMap;
+
+  // 👇 Move everything from here INSIDE initMap()
   info = new google.maps.InfoWindow();
+
+  // loadGeoJson, data styling, click + hover handlers, legend, autocomplete, etc
+  map.data.loadGeoJson('zip-map.json', null, () => {
+    // styling logic
+  });
+
+
+// 👇 Keep this at the very end only
 
   // ---- Data styling with spotlight support ----
   map.data.loadGeoJson('zip-map.json', null, () => {
