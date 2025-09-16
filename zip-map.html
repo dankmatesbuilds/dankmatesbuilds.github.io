@@ -479,20 +479,6 @@ if (containing) {
   info.open(map);
 }
 
-    else {
-      clearHighlight(map);
-      info.setContent(popupHTML({
-        zip: '—',
-        label: 'Free Delivery',
-        prepay: false,
-        neighborhood: null,
-        color: getColor('Free Delivery')
-      }));
-      info.open({ map, position: location });
-    }
-  });
-}
-
 // Expose callback globally
 window.initMap = initMap;
 
