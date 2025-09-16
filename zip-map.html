@@ -6,13 +6,24 @@
     <style>
       :root{
         --bg:#ffffff; --text:#111827; --muted:#6b7280;
-        --brand:#2563eb; --ring:rgba(37,99,235,.25);
+        --ring:rgba(37,99,235,.25);
         --shadow:0 8px 24px rgba(0,0,0,.12); --radius:14px;
+
+        /* Zone colors */
+        --free:#f5f5f5;
+        --fee-6:#fff5b1;          /* light yellow */
+        --fee-6-pre:#ffe681;      /* slightly darker yellow */
+        --fee-10:#ffd24d;         /* medium yellow */
+        --fee-10-pre:#ffb300;     /* medium-dark yellow */
+        --fee-15:#ff9800;         /* orange */
+        --fee-15-pre:#f57c00;     /* darker orange */
+        --fee-20:#ef5350;         /* red */
+        --fee-20-pre:#d32f2f;     /* darker red */
       }
       html,body{height:100%;margin:0;}
       #map{height:100%;width:100%;}
 
-      /* Search control (sits in TOP_LEFT via JS) */
+      /* Search control (placed in TOP_LEFT by JS) */
       #searchWrap{
         display:flex; align-items:center; gap:8px;
         background:var(--bg); color:var(--text);
@@ -40,27 +51,58 @@
     </style>
 
     <script>
-/** NEW GROUPS — label is the fee; prepay groups show a “Prepay” tag */
+/** NEW GROUPS — label is the fee; prepay indicates prepayment zones */
 const ZIP_GROUPS = [
-  // colors picked to be distinct and harmonious
-  { label:"$6",         fee:6,  prepay:false, color:"#2ca02c", zips:["19153","19131","19151","19140","19134","19129"] },
-  { label:"$6 Prepay",  fee:6,  prepay:true,  color:"#8dd3c7", zips:["19032","19079","19023","19050"] },
+  /* $6 */
+  { label:"$6",        fee:6,  prepay:false, color:getColor("$6"),        zips:["19153","19131","19151","19140","19134","19129","19142"] },
 
-  { label:"$10 Prepay", fee:10, prepay:true,  color:"#80b1d3", zips:["19082","19004","19074","19066","19036","19096","19018","19026","19113","19029"] },
-  { label:"$15 Prepay", fee:15, prepay:true,  color:"#bebada", zips:["19072","19003","19083","19078","19076","19043","19070"] },
+  /* $6 Prepay */
+  { label:"$6 Prepay", fee:6,  prepay:true,  color:getColor("$6 Prepay"), zips:["19032","19079","19023","19050"] },
 
-  { label:"$20 Prepay", fee:20, prepay:true,  color:"#fb8072",
+  /* $10 */
+  { label:"$10",       fee:10, prepay:false, color:getColor("$10"),       zips:["19144","19141","19120","19124","19137" /* 19127 moved to $15 */] },
+
+  /* $10 Prepay */
+  { label:"$10 Prepay",fee:10, prepay:true,  color:getColor("$10 Prepay"),zips:["19082","19004","19074","19066","19036","19096","19018","19026","19113","19029"] },
+
+  /* $15 */
+  { label:"$15",       fee:15, prepay:false, color:getColor("$15"),       zips:["19128","19119","19138","19126","19135","19149","19012","19127"] },
+
+  /* $15 Prepay */
+  { label:"$15 Prepay",fee:15, prepay:true,  color:getColor("$15 Prepay"),zips:["19072","19003","19083","19078","19076","19043","19070","19033"] },
+
+  /* $20 */
+  { label:"$20",       fee:20, prepay:false, color:getColor("$20"),       zips:["19118","19150","19111","19136","19152"] },
+
+  /* $20 Prepay */
+  { label:"$20 Prepay",fee:20, prepay:true,  color:getColor("$20 Prepay"),
     zips:[
       "19022","19094","19081","19064","19041","19010","19085","19428","19035","19027",
-      /* 19012 removed here to resolve conflict (assigned to $15 below) */
-      "19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007"
+      "19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007","19008"
     ]
-  },
-
-  { label:"$10",        fee:10, prepay:false, color:"#fdb462", zips:["19127","19144","19141","19120","19124","19137"] },
-  { label:"$15",        fee:15, prepay:false, color:"#b3de69", zips:["19128","19119","19138","19126","19135","19149","19012"] },
-  { label:"$20",        fee:20, prepay:false, color:"#fccde5", zips:["19118","19150","19111","19136","19152"] }
+  }
 ];
+
+/* Color palette by label */
+function getColor(label){
+  switch(label){
+    case "Free Delivery": return getComputedStyleColor('--free');
+    case "$6": return getComputedStyleColor('--fee-6');
+    case "$6 Prepay": return getComputedStyleColor('--fee-6-pre');
+    case "$10": return getComputedStyleColor('--fee-10');
+    case "$10 Prepay": return getComputedStyleColor('--fee-10-pre');
+    case "$15": return getComputedStyleColor('--fee-15');
+    case "$15 Prepay": return getComputedStyleColor('--fee-15-pre');
+    case "$20": return getComputedStyleColor('--fee-20');
+    case "$20 Prepay": return getComputedStyleColor('--fee-20-pre');
+    default: return getComputedStyleColor('--free');
+  }
+}
+function getComputedStyleColor(varName){
+  const el = document.documentElement;
+  const val = getComputedStyle(el).getPropertyValue(varName).trim();
+  return val || '#f5f5f5';
+}
 
 /** Fast lookup: ZIP -> group meta */
 const ZIP_STYLE = (() => {
@@ -69,21 +111,26 @@ const ZIP_STYLE = (() => {
   return m;
 })();
 
-/* Popup template — header shows fee label; chips for ZIP and “Prepay” when applicable */
+/* Popup template — header shows fee label; chips for ZIP + Prepay tag */
 function popupHTML({address, zip, label, fee, color, prepay}){
+  const feeChip = (label === "Free Delivery" || fee === 0)
+    ? `<div class="dm-fee" style="background:#fff;color:#111827;">Free Delivery</div>`
+    : `<div class="dm-fee">$${fee}</div>`;
+
   return `
     <div class="dm-popup">
       <div class="dm-head">
-        <div>${label}</div>
+        <div>${label || 'Free Delivery'}</div>
         <div style="display:flex; gap:6px;">
           ${prepay ? `<div class="dm-prepay">Prepay</div>` : ``}
+          ${feeChip}
           <div class="dm-fee" style="background:#111827;color:#fff;">${zip}</div>
         </div>
       </div>
       <div class="dm-body">
         ${address ? `<div class="dm-row"><div class="dm-label">Address</div><div>${address}</div></div>` : ''}
         <div class="dm-row"><div class="dm-label">Zone</div>
-          <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${label}${prepay ? " · Prepay" : ""}</div>
+          <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${label || 'Free Delivery'}${prepay ? " · Prepay" : ""}</div>
         </div>
       </div>
     </div>
@@ -94,7 +141,7 @@ let lastHighlighted = null;
 let marker = null;
 let info = null;
 
-/* Lightweight text label overlay (for hover ZIP text, not a popup) */
+/* Subtle text label overlay (for hover ZIP text) */
 class TextLabel extends google.maps.OverlayView {
   constructor(opts) { super(); this.position = opts.position; this.text = opts.text; this.div = null; }
   onAdd(){
@@ -104,19 +151,19 @@ class TextLabel extends google.maps.OverlayView {
     this.div.style.padding = '2px 6px';
     this.div.style.font = '600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
     this.div.style.color = '#111';
-    this.div.style.background = 'rgba(255,255,255,0.9)';
+    this.div.style.background = 'rgba(255,255,255,0.85)';
     this.div.style.border = '1px solid #e5e7eb';
     this.div.style.borderRadius = '6px';
-    this.div.style.boxShadow = '0 2px 6px rgba(0,0,0,.12)';
+    this.div.style.boxShadow = '0 2px 6px rgba(0,0,0,.10)';
     this.div.style.pointerEvents = 'none';
     this.div.textContent = this.text;
     const panes = this.getPanes();
-    panes.floatPane.appendChild(this.div);
+    panes.overlayMouseTarget.appendChild(this.div);
   }
   draw(){
     const proj = this.getProjection();
+    if (!proj || !this.position || !this.div) return;
     const p = proj.fromLatLngToDivPixel(this.position);
-    if (!this.div) return;
     this.div.style.left = p.x + 'px';
     this.div.style.top  = p.y + 'px';
   }
@@ -139,40 +186,45 @@ function initMap() {
     .push(document.getElementById('searchWrap'));
 
   info = new google.maps.InfoWindow();
-  let hoverLabel = null; // one text label reused for hover
+  let hoverLabel = null; // reused hover label
 
-  // Load polygons and style by fee; darker outlines for any $20 groups
+  // Load polygons and style by fee (uniform outlines)
   map.data.loadGeoJson('zip-map.json', null, () => {
-  map.data.setStyle(feature => {
-    const zip = feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
-    const s = ZIP_STYLE.get(String(zip));
-    const fee = s?.fee ?? 0;
+    map.data.setStyle(feature => {
+      const zip = getZipFromFeature(feature);
+      const s = ZIP_STYLE.get(String(zip));
+      const fee = s?.fee ?? 0;
+      const label = s?.label ?? "Free Delivery";
+      const color = s?.color ?? getColor("Free Delivery");
 
-    const fillOpacity =
-      fee >= 20 ? 0.45 :
-      fee >= 15 ? 0.35 :
-      fee >= 10 ? 0.30 :
-      fee >=  6 ? 0.28 : 0.25;
+      const fillOpacity =
+        fee >= 20 ? 0.45 :
+        fee >= 15 ? 0.35 :
+        fee >= 10 ? 0.30 :
+        fee >=  6 ? 0.28 : 0.22;
 
-    // 🔧 Uniform outline style for all zones
-    return {
-      fillColor: s ? s.color : "#999999",
-      fillOpacity,
-      strokeColor: s ? s.color : '#666666',
-      strokeWeight: 1.5
-    };
+      return {
+        fillColor: color,
+        fillOpacity,
+        strokeColor: color,
+        strokeWeight: 1.5
+      };
+    });
   });
-});
 
-
-  // Click → pretty popup + strong highlight
+  // Click → popup + strong highlight
   map.data.addListener('click', (e) => {
     const zip = getZipFromFeature(e.feature);
     const s = ZIP_STYLE.get(String(zip)) || {};
+    const label = s.label || "Free Delivery";
+    const fee = s.fee || 0;
+    const color = s.color || getColor("Free Delivery");
+    const prepay = !!s.prepay;
+
     highlightFeature(map, e.feature);
 
     info.setContent(popupHTML({
-      address: null, zip, label: s.label || '$—', fee: s.fee || 0, color: s.color || '#999', prepay: !!s.prepay
+      address: null, zip, label, fee, color, prepay
     }));
     info.setPosition(e.latLng);
     info.open(map);
@@ -181,7 +233,7 @@ function initMap() {
   // Hover effects: thicken outline + centered ZIP text (no popup)
   map.data.addListener('mouseover', (e) => {
     const zip = getZipFromFeature(e.feature);
-    map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.36 });
+    map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.34 });
 
     const center = centerOfFeature(e.feature);
     if (!center) return;
@@ -195,12 +247,27 @@ function initMap() {
       hoverLabel.setMap(map);
     }
   });
+  map.data.addListener('mousemove', (e) => {
+    // keep label near center even if multi-part geometry
+    const center = centerOfFeature(e.feature);
+    if (hoverLabel && center) hoverLabel.setPosition(center);
+  });
   map.data.addListener('mouseout', (e) => {
     if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
     if (hoverLabel) hoverLabel.setMap(null);
   });
 
-  // Legend — shows label and Prepay
+  // Legend — requested order (including Free Delivery at the top)
+  const ORDER = ["Free Delivery", "$6", "$6 Prepay", "$10", "$10 Prepay", "$15", "$15 Prepay", "$20", "$20 Prepay"];
+  const LEGEND_GROUPS = (() => {
+    // Build a unique map by label, preserving your order
+    const byLabel = new Map();
+    ZIP_GROUPS.forEach(g => byLabel.set(g.label, g));
+    // Ensure Free Delivery is present even if no ZIPs currently map to it
+    if (!byLabel.has("Free Delivery")) byLabel.set("Free Delivery", { label:"Free Delivery", color:getColor("Free Delivery"), prepay:false, fee:0 });
+    return ORDER.map(l => byLabel.get(l)).filter(Boolean);
+  })();
+
   const legend = document.createElement('div');
   legend.style.background = '#fff';
   legend.style.margin = '10px';
@@ -208,9 +275,9 @@ function initMap() {
   legend.style.borderRadius = '8px';
   legend.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
   legend.innerHTML = '<b>Service Areas</b><br/>' +
-    ZIP_GROUPS.map(g => `
+    LEGEND_GROUPS.map(g => `
       <div style="display:flex;align-items:center;margin:4px 0;">
-        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
+        <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;border:1px solid rgba(0,0,0,.12)"></span>
         ${g.label}${g.prepay ? ' <span style="margin-left:6px;background:#fde68a;border:1px solid #f59e0b;color:#92400e;border-radius:999px;padding:0 6px;font-size:11px;">Prepay</span>' : ''}
       </div>`).join('');
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
@@ -271,15 +338,19 @@ function initMap() {
       highlightFeature(map, containing);
       const zip = getZipFromFeature(containing);
       const s = ZIP_STYLE.get(String(zip)) || {};
+      const label = s.label || "Free Delivery";
+      const fee = s.fee || 0;
+      const color = s.color || getColor("Free Delivery");
+      const prepay = !!s.prepay;
 
       info.setContent(popupHTML({
         address: place.formatted_address || '—',
-        zip, label: s.label || '$—', fee: s.fee || 0, color: s.color || '#999', prepay: !!s.prepay
+        zip, label, fee, color, prepay
       }));
       info.open({ map, position: location });
     } else {
       clearHighlight(map);
-      info.setContent(`<div class="dm-popup"><div class="dm-head"><div>Result</div><div class="dm-fee">$—</div></div><div class="dm-body"><div class="dm-row"><div class="dm-label">Address</div><div>${place.formatted_address || '—'}</div></div><div class="dm-row"><div class="dm-label">Status</div><div>Not in a mapped ZIP.</div></div></div></div>`);
+      info.setContent(`<div class="dm-popup"><div class="dm-head"><div>Result</div><div class="dm-fee">Free Delivery</div></div><div class="dm-body"><div class="dm-row"><div class="dm-label">Address</div><div>${place.formatted_address || '—'}</div></div><div class="dm-row"><div class="dm-label">Status</div><div>Not in a mapped ZIP.</div></div></div></div>`);
       info.open({ map, position: location });
     }
   });
@@ -321,25 +392,22 @@ function featureContainsLatLng(feature, latLng){
   walk(geom);
   return inside;
 }
-function getFeatureBounds(feature){
-  const bounds = new google.maps.LatLngBounds(); let has = false;
+/* Build full bounds of a feature, return center LatLng */
+function centerOfFeature(feature){
+  const bounds = new google.maps.LatLngBounds();
+  let has = false;
   const walk = (g) => {
     const t = g.getType();
-    if (t === 'Polygon' || t === 'LineString'){
-      g.getArray().forEach(path => {
-        (path.getArray ? path.getArray() : [path]).forEach(pt => { bounds.extend(pt); has = true; });
-      });
-    } else if (t === 'MultiPolygon' || t === 'MultiLineString' || t === 'GeometryCollection'){
+    if (t === 'Polygon'){
+      g.getArray().forEach(ring => ring.getArray().forEach(pt => { bounds.extend(pt); has = true; }));
+    } else if (t === 'MultiPolygon' || t === 'GeometryCollection'){
       g.getArray().forEach(walk);
-    } else if (t === 'Point'){ bounds.extend(g.get()); has = true; }
+    } else if (t === 'Point'){
+      bounds.extend(g.get()); has = true;
+    }
   };
   walk(feature.getGeometry());
   return has ? bounds.getCenter() : null;
-}
-/* centerOfFeature: use bounds center as a robust centroid */
-function centerOfFeature(feature){
-  const b = getFeatureBounds(feature);
-  return b || null;
 }
     </script>
 
