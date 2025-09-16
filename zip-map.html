@@ -418,62 +418,60 @@ function initMap() {
     });
   }
 
-  // Search handler — camera stays on the address
-  ac.addListener('place_changed', async () => {
-    const place = ac.getPlace();
-    let location = place?.geometry?.location || null;
-    const isStreetAddress = (place.address_components || []).some(c => c.types.includes('street_number'));
+// Search handler — camera stays on the address
+ac.addListener('place_changed', async () => {
+  const place = ac.getPlace();
+  let location = place?.geometry?.location || null;
+  const isStreetAddress = (place.address_components || []).some(c => c.types.includes('street_number'));
 
-    if (!location || !isStreetAddress) {
-      try {
-        const q = input.value.trim();
-        const { results } = await geocoder.geocode({
-          address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
-        });
-        if (results && results[0]?.geometry?.location) location = results[0].geometry.location;
-      } catch (_) {}
-    }
-    if (!location) return;
+  if (!location || !isStreetAddress) {
+    try {
+      const q = input.value.trim();
+      const { results } = await geocoder.geocode({
+        address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
+      });
+      if (results && results[0]?.geometry?.location) location = results[0].geometry.location;
+    } catch (_) {}
+  }
+  if (!location) return;
 
-    if (!marker) marker = new google.maps.Marker({ map, position: location });
-    else marker.setPosition(location);
+  if (!marker) marker = new google.maps.Marker({ map, position: location });
+  else marker.setPosition(location);
 
-    // Always pan + zoom manually so we never jump to wrong viewport
-map.panTo(location);
-map.setZoom(17);
-
-
-const containing = findContainingFeature(map, location);
-if (containing) {
-  highlightFeature(map, containing);
-  const zip = getZipFromFeature(containing);
-  const s = ZIP_STYLE.get(String(zip)) || {};
-  const neighborhood = getNeighborhoodForZip(zip);
-
+  // Always pan + zoom manually so we never jump to wrong viewport
   map.panTo(location);
   map.setZoom(17);
 
-  info.setContent(popupHTML({
-    zip,
-    label: s.label || 'Free Delivery',
-    prepay: !!s.prepay,
-    neighborhood,
-    color: s.color || getColor('Free Delivery')
-  }));
-  info.setPosition(location);
-  info.open(map);
-} else {
-  clearHighlight(map);
-  info.setContent(popupHTML({
-    zip: '—',
-    label: 'Free Delivery',
-    prepay: false,
-    neighborhood: null,
-    color: getColor('Free Delivery')
-  }));
-  info.setPosition(location);
-  info.open(map);
-}
+  const containing = findContainingFeature(map, location);
+  if (containing) {
+    highlightFeature(map, containing);
+    const zip = getZipFromFeature(containing);
+    const s = ZIP_STYLE.get(String(zip)) || {};
+    const neighborhood = getNeighborhoodForZip(zip);
+
+    info.setContent(popupHTML({
+      zip,
+      label: s.label || 'Free Delivery',
+      prepay: !!s.prepay,
+      neighborhood,
+      color: s.color || getColor('Free Delivery')
+    }));
+    info.setPosition(location);
+    info.open(map);
+  } else {
+    clearHighlight(map);
+    info.setContent(popupHTML({
+      zip: '—',
+      label: 'Free Delivery',
+      prepay: false,
+      neighborhood: null,
+      color: getColor('Free Delivery')
+    }));
+    info.setPosition(location);
+    info.open(map);
+  }
+});
+
 
 // Expose callback globally
 window.initMap = initMap;
