@@ -438,8 +438,10 @@ function initMap() {
     if (!marker) marker = new google.maps.Marker({ map, position: location });
     else marker.setPosition(location);
 
-    if (place?.geometry?.viewport) map.fitBounds(place.geometry.viewport);
-    else { map.setCenter(location); map.setZoom(17); }
+    // Always pan + zoom manually so we never jump to wrong viewport
+map.panTo(location);
+map.setZoom(17);
+
 
     const containing = findContainingFeature(map, location);
     if (containing) {
