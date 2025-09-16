@@ -12,7 +12,7 @@
       html,body{height:100%;margin:0;}
       #map{height:100%;width:100%;}
 
-      /* Search UI now behaves like a map control (no absolute positioning) */
+      /* Search control (sits in TOP_LEFT via JS) */
       #searchWrap{
         display:flex; align-items:center; gap:8px;
         background:var(--bg); color:var(--text);
@@ -31,6 +31,7 @@
       .dm-popup{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-width:240px;max-width:320px;color:var(--text);}
       .dm-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:linear-gradient(135deg,#111827,#374151);color:#fff;border-radius:12px 12px 0 0;}
       .dm-fee{background:#fff;color:#111827;font-weight:700;padding:2px 8px;border-radius:999px;font-size:12px;}
+      .dm-prepay{background:#fde68a;color:#92400e;font-weight:700;padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #f59e0b;}
       .dm-body{padding:12px;background:#fff;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;}
       .dm-row{display:flex;gap:8px;margin:6px 0;font-size:14px;}
       .dm-label{width:76px;color:var(--muted);}
@@ -39,47 +40,50 @@
     </style>
 
     <script>
-/** DELIVERY ZONES — with fee tiers from City Hall (0, 6, 10, 15, 20) */
+/** NEW GROUPS — label is the fee; prepay groups show a “Prepay” tag */
 const ZIP_GROUPS = [
-  { name:"Center City", color:"#1f77b4", fee:0,  zips:["19102","19103","19106","19107"] },
-  { name:"University City", color:"#17becf", fee:0, zips:["19104","19139"] },
-  { name:"South Philly", color:"#ff7f0e", fee:6,  zips:["19145","19146","19147","19148"] },
-  { name:"River Wards", color:"#d62728", fee:6,  zips:["19122","19123","19124","19125","19133","19134"] },
-  { name:"West & SW Philly", color:"#2ca02c", fee:6, zips:["19131","19143","19151"] },
-  { name:"Airport / Navy Yard", color:"#e377c2", fee:10, zips:["19112","19153"] },
-  { name:"North Philly", color:"#9467bd", fee:10, zips:["19121","19130","19132","19140","19141","19150"] },
-  { name:"Northeast Core", color:"#7f7f7f", fee:10, zips:["19124","19126","19137","19138"] },
-  { name:"Northwest (Rox/CH/Manayunk)", color:"#8c564b", fee:15, zips:["19118","19119","19128","19129","19144"] },
-  { name:"Far Northeast", color:"#bcbd22", fee:20, zips:["19111","19114","19115","19116","19135","19136","19149","19152","19154"] },
-  { name:"Main Line", color:"#2b8a3e", fee:15, zips:["19003","19004","19010","19041","19066","19072","19085","19096","19035"] },
-  { name:"Montco NE Burbs", color:"#228be6", fee:10, zips:["19012","19027","19038","19046"] },
-  { name:"Lower Bucks", color:"#ffa94d", fee:20, zips:["19007","19020","19021"] },
-  { name:"Delco Inner Ring", color:"#fa5252", fee:10, zips:["19022","19023","19026","19029","19032","19033","19036","19043","19050","19064","19070","19074","19076","19078","19079","19081","19082","19083","19094"] },
-  { name:"Downtown PO/Business ZIPs", color:"#495057", fee:0, zips:["19019","19092","19093","19099","19101","19105","19108","19109","19110","19155","19160","19161","19162","19170","19171","19172","19173","19175","19176","19177","19178","19179","19181","19182","19183","19184","19185","19187","19188","19190","19191","19192","19193","19194","19195","19196","19197","19244","19255"] }
+  // colors picked to be distinct and harmonious
+  { label:"$6",         fee:6,  prepay:false, color:"#2ca02c", zips:["19153","19131","19151","19140","19134","19129"] },
+  { label:"$6 Prepay",  fee:6,  prepay:true,  color:"#8dd3c7", zips:["19032","19079","19023","19050"] },
+
+  { label:"$10 Prepay", fee:10, prepay:true,  color:"#80b1d3", zips:["19082","19004","19074","19066","19036","19096","19018","19026","19113","19029"] },
+  { label:"$15 Prepay", fee:15, prepay:true,  color:"#bebada", zips:["19072","19003","19083","19078","19076","19043","19070"] },
+
+  { label:"$20 Prepay", fee:20, prepay:true,  color:"#fb8072",
+    zips:[
+      "19022","19094","19081","19064","19041","19010","19085","19428","19035","19027",
+      /* 19012 removed here to resolve conflict (assigned to $15 below) */
+      "19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007"
+    ]
+  },
+
+  { label:"$10",        fee:10, prepay:false, color:"#fdb462", zips:["19127","19144","19141","19120","19124","19137"] },
+  { label:"$15",        fee:15, prepay:false, color:"#b3de69", zips:["19128","19119","19138","19126","19135","19149","19012"] },
+  { label:"$20",        fee:20, prepay:false, color:"#fccde5", zips:["19118","19150","19111","19136","19152"] }
 ];
 
-/** Quick lookup: ZIP -> {color, name} */
+/** Fast lookup: ZIP -> group meta */
 const ZIP_STYLE = (() => {
   const m = new Map();
-  ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, name: g.name })));
+  ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, label: g.label, fee: g.fee, prepay: g.prepay })));
   return m;
 })();
 
-/* Popup template — header shows Zone name + $fee + ZIP chip */
-function popupHTML({address, zip, groupName, fee, color}){
+/* Popup template — header shows fee label; chips for ZIP and “Prepay” when applicable */
+function popupHTML({address, zip, label, fee, color, prepay}){
   return `
     <div class="dm-popup">
       <div class="dm-head">
-        <div>${groupName || 'Delivery Zone'}</div>
+        <div>${label}</div>
         <div style="display:flex; gap:6px;">
-          <div class="dm-fee">$${fee}</div>
+          ${prepay ? `<div class="dm-prepay">Prepay</div>` : ``}
           <div class="dm-fee" style="background:#111827;color:#fff;">${zip}</div>
         </div>
       </div>
       <div class="dm-body">
         ${address ? `<div class="dm-row"><div class="dm-label">Address</div><div>${address}</div></div>` : ''}
         <div class="dm-row"><div class="dm-label">Zone</div>
-          <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${groupName}</div>
+          <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${label}${prepay ? " · Prepay" : ""}</div>
         </div>
       </div>
     </div>
@@ -90,85 +94,113 @@ let lastHighlighted = null;
 let marker = null;
 let info = null;
 
+/* Lightweight text label overlay (for hover ZIP text, not a popup) */
+class TextLabel extends google.maps.OverlayView {
+  constructor(opts) { super(); this.position = opts.position; this.text = opts.text; this.div = null; }
+  onAdd(){
+    this.div = document.createElement('div');
+    this.div.style.position = 'absolute';
+    this.div.style.transform = 'translate(-50%,-50%)';
+    this.div.style.padding = '2px 6px';
+    this.div.style.font = '600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif';
+    this.div.style.color = '#111';
+    this.div.style.background = 'rgba(255,255,255,0.9)';
+    this.div.style.border = '1px solid #e5e7eb';
+    this.div.style.borderRadius = '6px';
+    this.div.style.boxShadow = '0 2px 6px rgba(0,0,0,.12)';
+    this.div.style.pointerEvents = 'none';
+    this.div.textContent = this.text;
+    const panes = this.getPanes();
+    panes.floatPane.appendChild(this.div);
+  }
+  draw(){
+    const proj = this.getProjection();
+    const p = proj.fromLatLngToDivPixel(this.position);
+    if (!this.div) return;
+    this.div.style.left = p.x + 'px';
+    this.div.style.top  = p.y + 'px';
+  }
+  onRemove(){ if (this.div && this.div.parentNode) this.div.parentNode.removeChild(this.div); this.div = null; }
+  setPosition(pos){ this.position = pos; this.draw(); }
+  setText(t){ this.text = t; if (this.div) this.div.textContent = t; }
+}
+
 function initMap() {
   const map = new google.maps.Map(document.getElementById("map"), {
     zoom: 10,
     center: { lat: 39.9526, lng: -75.1652 }
   });
 
-  // Keep Google’s map type control, push it to the top-right.
   map.setOptions({
     mapTypeControl: true,
     mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT }
   });
-  // Put our search UI into the map’s TOP_LEFT control stack.
   map.controls[google.maps.ControlPosition.TOP_LEFT]
     .push(document.getElementById('searchWrap'));
 
   info = new google.maps.InfoWindow();
-  const hoverInfo = new google.maps.InfoWindow({ disableAutoPan: true });
+  let hoverLabel = null; // one text label reused for hover
 
-  // Load polygons and style by fee; darker outlines for Far NE & Lower Bucks
+  // Load polygons and style by fee; darker outlines for any $20 groups
   map.data.loadGeoJson('zip-map.json', null, () => {
-    map.data.setStyle(feature => {
-      const zip = feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
-      const s = ZIP_STYLE.get(String(zip));
-      const group = ZIP_GROUPS.find(g => g.name === (s?.name));
-      const fee = group?.fee ?? 0;
+  map.data.setStyle(feature => {
+    const zip = feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
+    const s = ZIP_STYLE.get(String(zip));
+    const fee = s?.fee ?? 0;
 
-      const fillOpacity =
-        fee >= 20 ? 0.45 :
-        fee >= 15 ? 0.35 :
-        fee >= 10 ? 0.30 :
-        fee >=  6 ? 0.28 : 0.25;
+    const fillOpacity =
+      fee >= 20 ? 0.45 :
+      fee >= 15 ? 0.35 :
+      fee >= 10 ? 0.30 :
+      fee >=  6 ? 0.28 : 0.25;
 
-      const strong = group && (group.name === 'Far Northeast' || group.name === 'Lower Bucks');
-
-      return {
-        fillColor: s ? s.color : "#999999",
-        fillOpacity,
-        strokeColor: strong ? '#222' : (s ? s.color : '#666666'),
-        strokeWeight: strong ? 3 : 1.5
-      };
-    });
+    // 🔧 Uniform outline style for all zones
+    return {
+      fillColor: s ? s.color : "#999999",
+      fillOpacity,
+      strokeColor: s ? s.color : '#666666',
+      strokeWeight: 1.5
+    };
   });
+});
+
 
   // Click → pretty popup + strong highlight
   map.data.addListener('click', (e) => {
     const zip = getZipFromFeature(e.feature);
-    const s = ZIP_STYLE.get(String(zip));
-    const groupName = s?.name || "Ungrouped";
-    const fee = ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0;
-
+    const s = ZIP_STYLE.get(String(zip)) || {};
     highlightFeature(map, e.feature);
 
     info.setContent(popupHTML({
-      address: null, zip, groupName, fee, color: s?.color || '#999'
+      address: null, zip, label: s.label || '$—', fee: s.fee || 0, color: s.color || '#999', prepay: !!s.prepay
     }));
     info.setPosition(e.latLng);
     info.open(map);
   });
 
-  // Hover effects: thicken outline + small ZIP label near cursor
+  // Hover effects: thicken outline + centered ZIP text (no popup)
   map.data.addListener('mouseover', (e) => {
     const zip = getZipFromFeature(e.feature);
     map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.36 });
-    hoverInfo.setContent(
-      `<div style="font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-                   color:#111;background:#fff;border:1px solid #e5e7eb;
-                   padding:3px 6px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.12);">
-         ${zip}
-       </div>`
-    );
-    hoverInfo.setPosition(e.latLng);
-    hoverInfo.open({ map });
+
+    const center = centerOfFeature(e.feature);
+    if (!center) return;
+
+    if (!hoverLabel) {
+      hoverLabel = new TextLabel({ position: center, text: zip });
+      hoverLabel.setMap(map);
+    } else {
+      hoverLabel.setText(zip);
+      hoverLabel.setPosition(center);
+      hoverLabel.setMap(map);
+    }
   });
   map.data.addListener('mouseout', (e) => {
     if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
-    hoverInfo.close();
+    if (hoverLabel) hoverLabel.setMap(null);
   });
 
-  // Legend → bottom-right so it doesn't collide with other controls
+  // Legend — shows label and Prepay
   const legend = document.createElement('div');
   legend.style.background = '#fff';
   legend.style.margin = '10px';
@@ -179,7 +211,7 @@ function initMap() {
     ZIP_GROUPS.map(g => `
       <div style="display:flex;align-items:center;margin:4px 0;">
         <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
-        ${g.name} <span style="color:#555">&nbsp;($${g.fee})</span>
+        ${g.label}${g.prepay ? ' <span style="margin-left:6px;background:#fde68a;border:1px solid #f59e0b;color:#92400e;border-radius:999px;padding:0 6px;font-size:11px;">Prepay</span>' : ''}
       </div>`).join('');
   map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
 
@@ -199,7 +231,6 @@ function initMap() {
   });
   const geocoder = new google.maps.Geocoder();
 
-  // Clear button (guarded)
   const clearEl = document.getElementById('clearBtn');
   if (clearEl) {
     clearEl.addEventListener('click', () => {
@@ -208,10 +239,11 @@ function initMap() {
       if (marker) { marker.setMap(null); marker = null; }
       clearHighlight(map);
       info.close();
+      if (hoverLabel) hoverLabel.setMap(null);
     });
   }
 
-  // Search handler — keep camera on the address, not the ZIP bounds
+  // Search handler — camera stays on address
   ac.addListener('place_changed', async () => {
     const place = ac.getPlace();
     let location = place?.geometry?.location || null;
@@ -238,15 +270,11 @@ function initMap() {
     if (containing) {
       highlightFeature(map, containing);
       const zip = getZipFromFeature(containing);
-      const s = ZIP_STYLE.get(String(zip));
-      const groupName = s?.name || 'Ungrouped';
-      const fee = ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0;
-
-      // (Removed ZIP fitBounds to prevent jumping away from the address)
+      const s = ZIP_STYLE.get(String(zip)) || {};
 
       info.setContent(popupHTML({
         address: place.formatted_address || '—',
-        zip, groupName, fee, color: s?.color || '#999'
+        zip, label: s.label || '$—', fee: s.fee || 0, color: s.color || '#999', prepay: !!s.prepay
       }));
       info.open({ map, position: location });
     } else {
@@ -306,18 +334,23 @@ function getFeatureBounds(feature){
     } else if (t === 'Point'){ bounds.extend(g.get()); has = true; }
   };
   walk(feature.getGeometry());
-  return has ? bounds : null;
+  return has ? bounds.getCenter() : null;
+}
+/* centerOfFeature: use bounds center as a robust centroid */
+function centerOfFeature(feature){
+  const b = getFeatureBounds(feature);
+  return b || null;
 }
     </script>
 
-    <!-- Loader: Maps + Places + Geometry (calls window.initMap) -->
+    <!-- Loader: Maps + Places + Geometry -->
     <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
+      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap&loading=async&libraries=places,geometry">
     </script>
   </head>
 
   <body>
-    <!-- Search control (will be placed in TOP_LEFT by initMap) -->
+    <!-- Search control (placed in TOP_LEFT by initMap) -->
     <div id="searchWrap">
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
