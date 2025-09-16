@@ -12,13 +12,13 @@
       html,body{height:100%;margin:0;}
       #map{height:100%;width:100%;}
 
-      /* Search UI */
+      /* Search UI now behaves like a map control (no absolute positioning) */
       #searchWrap{
-        position:absolute; z-index:5; top:16px; left:16px;
         display:flex; align-items:center; gap:8px;
         background:var(--bg); color:var(--text);
         border-radius:var(--radius); padding:10px 12px;
         box-shadow:var(--shadow); border:1px solid #e5e7eb;
+        margin:10px;
       }
       #searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
       #search{width:320px;max-width:62vw;border:none;outline:none;font-size:14px;color:var(--text);background:transparent;}
@@ -65,19 +65,20 @@ const ZIP_STYLE = (() => {
   return m;
 })();
 
-/* Pretty InfoWindow template */
+/* Popup template — header shows Zone name + $fee + ZIP chip */
 function popupHTML({address, zip, groupName, fee, color}){
   return `
     <div class="dm-popup">
       <div class="dm-head">
-        <div>${address ? address : 'Delivery Zone'}</div>
-        <div class="dm-fee">$${fee}</div>
+        <div>${groupName || 'Delivery Zone'}</div>
+        <div style="display:flex; gap:6px;">
+          <div class="dm-fee">$${fee}</div>
+          <div class="dm-fee" style="background:#111827;color:#fff;">${zip}</div>
+        </div>
       </div>
       <div class="dm-body">
         ${address ? `<div class="dm-row"><div class="dm-label">Address</div><div>${address}</div></div>` : ''}
-        <div class="dm-row"><div class="dm-label">ZIP</div><div>${zip}</div></div>
-        <div class="dm-row">
-          <div class="dm-label">Zone</div>
+        <div class="dm-row"><div class="dm-label">Zone</div>
           <div class="dm-chip"><span class="dm-dot" style="background:${color}"></span>${groupName}</div>
         </div>
       </div>
@@ -95,36 +96,79 @@ function initMap() {
     center: { lat: 39.9526, lng: -75.1652 }
   });
 
-  info = new google.maps.InfoWindow();
+  // Keep Google’s map type control, push it to the top-right.
+  map.setOptions({
+    mapTypeControl: true,
+    mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT }
+  });
+  // Put our search UI into the map’s TOP_LEFT control stack.
+  map.controls[google.maps.ControlPosition.TOP_LEFT]
+    .push(document.getElementById('searchWrap'));
 
-  // Load polygons and style by fee
+  info = new google.maps.InfoWindow();
+  const hoverInfo = new google.maps.InfoWindow({ disableAutoPan: true });
+
+  // Load polygons and style by fee; darker outlines for Far NE & Lower Bucks
   map.data.loadGeoJson('zip-map.json', null, () => {
     map.data.setStyle(feature => {
       const zip = feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
       const s = ZIP_STYLE.get(String(zip));
-      const fee = ZIP_GROUPS.find(g => g.name === (s?.name))?.fee ?? 0;
-      const opacity = fee >= 20 ? 0.45 : fee >= 15 ? 0.35 : fee >= 10 ? 0.30 : fee >= 6 ? 0.28 : 0.25;
+      const group = ZIP_GROUPS.find(g => g.name === (s?.name));
+      const fee = group?.fee ?? 0;
+
+      const fillOpacity =
+        fee >= 20 ? 0.45 :
+        fee >= 15 ? 0.35 :
+        fee >= 10 ? 0.30 :
+        fee >=  6 ? 0.28 : 0.25;
+
+      const strong = group && (group.name === 'Far Northeast' || group.name === 'Lower Bucks');
+
       return {
         fillColor: s ? s.color : "#999999",
-        fillOpacity: opacity,
-        strokeColor: s ? s.color : "#666666",
-        strokeWeight: 1
+        fillOpacity,
+        strokeColor: strong ? '#222' : (s ? s.color : '#666666'),
+        strokeWeight: strong ? 3 : 1.5
       };
     });
   });
 
-  // Click → popup
+  // Click → pretty popup + strong highlight
   map.data.addListener('click', (e) => {
     const zip = getZipFromFeature(e.feature);
     const s = ZIP_STYLE.get(String(zip));
     const groupName = s?.name || "Ungrouped";
     const fee = ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0;
-    info.setContent(popupHTML({ address: null, zip, groupName, fee, color: s?.color || '#999' }));
+
+    highlightFeature(map, e.feature);
+
+    info.setContent(popupHTML({
+      address: null, zip, groupName, fee, color: s?.color || '#999'
+    }));
     info.setPosition(e.latLng);
     info.open(map);
   });
 
-  // Legend
+  // Hover effects: thicken outline + small ZIP label near cursor
+  map.data.addListener('mouseover', (e) => {
+    const zip = getZipFromFeature(e.feature);
+    map.data.overrideStyle(e.feature, { strokeWeight: 3, fillOpacity: 0.36 });
+    hoverInfo.setContent(
+      `<div style="font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+                   color:#111;background:#fff;border:1px solid #e5e7eb;
+                   padding:3px 6px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.12);">
+         ${zip}
+       </div>`
+    );
+    hoverInfo.setPosition(e.latLng);
+    hoverInfo.open({ map });
+  });
+  map.data.addListener('mouseout', (e) => {
+    if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
+    hoverInfo.close();
+  });
+
+  // Legend → bottom-right so it doesn't collide with other controls
   const legend = document.createElement('div');
   legend.style.background = '#fff';
   legend.style.margin = '10px';
@@ -137,7 +181,7 @@ function initMap() {
         <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${g.color};margin-right:8px;"></span>
         ${g.name} <span style="color:#555">&nbsp;($${g.fee})</span>
       </div>`).join('');
-  map.controls[google.maps.ControlPosition.RIGHT_TOP].push(legend);
+  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
 
   // Autocomplete (Philly + South NJ bias)
   const phillySJBounds = new google.maps.LatLngBounds(
@@ -167,7 +211,7 @@ function initMap() {
     });
   }
 
-  // Search handler with viewport + fallback geocode
+  // Search handler — keep camera on the address, not the ZIP bounds
   ac.addListener('place_changed', async () => {
     const place = ac.getPlace();
     let location = place?.geometry?.location || null;
@@ -198,10 +242,12 @@ function initMap() {
       const groupName = s?.name || 'Ungrouped';
       const fee = ZIP_GROUPS.find(g => g.name === groupName)?.fee ?? 0;
 
-      const b = getFeatureBounds(containing);
-      if (b) { b.extend(location); map.fitBounds(b, { top:80, left:20, bottom:20, right:20 }); }
+      // (Removed ZIP fitBounds to prevent jumping away from the address)
 
-      info.setContent(popupHTML({ address: place.formatted_address || '—', zip, groupName, fee, color: s?.color || '#999' }));
+      info.setContent(popupHTML({
+        address: place.formatted_address || '—',
+        zip, groupName, fee, color: s?.color || '#999'
+      }));
       info.open({ map, position: location });
     } else {
       clearHighlight(map);
@@ -221,7 +267,7 @@ function getZipFromFeature(feature){
 function highlightFeature(map, feature){
   clearHighlight(map);
   lastHighlighted = feature;
-  map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 2 });
+  map.data.overrideStyle(feature, { fillOpacity: 0.6, strokeWeight: 4, zIndex: 1000 });
 }
 function clearHighlight(map){
   if (lastHighlighted){ map.data.revertStyle(lastHighlighted); lastHighlighted = null; }
@@ -271,6 +317,7 @@ function getFeatureBounds(feature){
   </head>
 
   <body>
+    <!-- Search control (will be placed in TOP_LEFT by initMap) -->
     <div id="searchWrap">
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
@@ -278,6 +325,7 @@ function getFeatureBounds(feature){
       <input id="search" type="text" placeholder="Search an address (Philly + South NJ)" />
       <button id="clearBtn" title="Clear">✕</button>
     </div>
+
     <div id="map"></div>
   </body>
 </html>
