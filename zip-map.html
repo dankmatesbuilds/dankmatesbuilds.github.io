@@ -7,102 +7,147 @@
     <!-- Google Fonts (free) -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500;600&family=DM+Sans:wght@500;600&family=Anton&display=swap" rel="stylesheet">
 
-    <style>
-      /* If you own Futura Condensed Extra Bold, upload it to /fonts and keep this.
-         Otherwise we fall back to Anton (already loaded), Impact, system sans. */
-      @font-face{
-        font-family: "FuturaCE-ExtraBoldCondensed";
-        src: url("./fonts/FuturaCondensedExtraBold.woff2") format("woff2");
-        font-weight: 800;
-        font-style: normal;
-        font-display: swap;
-      }
+  <style>
+  /* If you own Futura Condensed Extra Bold, upload it to /fonts and keep this.
+     Otherwise we fall back to Anton (already loaded), Impact, system sans. */
+  @font-face{
+    font-family: "FuturaCE-ExtraBoldCondensed";
+    src: url("./fonts/FuturaCondensedExtraBold.woff2") format("woff2");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+  }
 
-      :root{
-        --bg:#ffffff; --text:#111827; --muted:#6b7280;
-        --ring:rgba(37,99,235,.25);
-        --shadow:0 8px 24px rgba(0,0,0,.12); --radius:14px;
+  :root{
+    --bg:#ffffff; --text:#111827; --muted:#6b7280;
+    --ring:rgba(37,99,235,.25);
+    --shadow:0 8px 24px rgba(0,0,0,.12); --radius:14px;
 
-        /* Zone colors (your palette) */
-        --free:#A2DD9B;         /* light green */
-        --fee-6:#FFE770;        /* light yellow */
-        --fee-6-pre:#FFDD31;    /* slightly darker yellow */
-        --fee-10:#FFB43A;       /* medium yellow */
-        --fee-10-pre:#FF9E20;   /* medium-dark yellow */
-        --fee-15:#FC6722;       /* orange */
-        --fee-15-pre:#FF5100;   /* darker orange */
-        --fee-20:#ED0101;       /* red */
-        --fee-20-pre:#D10000;   /* darker red */
-      }
+    /* Zone colors (your palette) */
+    --free:#A2DD9B;         /* light green */
+    --fee-6:#FFE770;        /* light yellow */
+    --fee-6-pre:#FFDD31;    /* slightly darker yellow */
+    --fee-10:#FFB43A;       /* medium yellow */
+    --fee-10-pre:#FF9E20;   /* medium-dark yellow */
+    --fee-15:#FC6722;       /* orange */
+    --fee-15-pre:#FF5100;   /* darker orange */
+    --fee-20:#ED0101;       /* red */
+    --fee-20-pre:#D10000;   /* darker red */
+  }
 
-      html,body{height:100%;margin:0;}
-      body{font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
-      #map{height:100%;width:100%;}
+  html,body{height:100%;margin:0;}
+  body{font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
 
-      /* Search control (placed in TOP_LEFT by JS) */
-      #searchWrap{
-        display:flex; align-items:center; gap:8px;
-        background:var(--bg); color:var(--text);
-        border-radius:var(--radius); padding:10px 12px;
-        box-shadow:var(--shadow); border:1px solid #e5e7eb;
-        margin:10px;
-      }
-      #searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
-      #search{width:320px;max-width:62vw;border:none;outline:none;font-size:14px;color:var(--text);background:transparent;}
-      #search::placeholder{color:#9ca3af;}
-      #searchWrap:focus-within{box-shadow:var(--shadow),0 0 0 4px var(--ring);border-color:#d1d5db;}
-      #clearBtn{appearance:none;border:none;background:#f3f4f6;color:#6b7280;width:26px;height:26px;border-radius:8px;cursor:pointer;line-height:26px;text-align:center;font-size:14px;}
-      #clearBtn:hover{background:#e5e7eb;}
+  /* ---------------- Header with Logo + Search ---------------- */
+  #dm-header{
+    position: fixed; top: 0; left: 0; right: 0;
+    height: 80px;
+    background: #111827;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: flex; justify-content: center; align-items: center;
+  }
+  #dm-header-inner{
+    height: 100%;
+    width: min(94%, 1200px);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  /* Inline SVG logo sizing & color */
+  #dm-logo{ display:flex; align-items:center; }
+  #dm-logo svg, #dm-logo img{
+    height: 44px; width: auto; display:block;
+  }
+  /* If you want logo forced to white on the dark header, keep this: */
+  #dm-logo svg path{ fill:#fff; }
 
-      /* --- Popup styled like your screenshot --- */
-      .dm-popup{
-        font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        color:#0b0b0c;
-        min-width: 220px; max-width: 320px;
-        background:#fff;
-        border:1px solid rgba(0,0,0,.08);
-        border-radius: 14px;
-        box-shadow: 0 10px 30px rgba(0,0,0,.14);
-        overflow:hidden;
-      }
-      .dm-head{
-        display:flex; justify-content:space-between; align-items:center;
-        gap:12px; padding:12px 12px;
-        background:#fff;
-      }
-      .dm-title{
-        /* Futura Condensed Extra Bold → fallback to Anton if not present */
-        font-family: "FuturaCE-ExtraBoldCondensed","Anton","Impact",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-        font-weight: 800;
-        letter-spacing: .3px;
-        font-size: 22px;
-        line-height: 1;
-        text-transform: uppercase;
-      }
-      .dm-rowline{
-        display:flex; justify-content:space-between; align-items:center;
-        gap:12px; margin-top:10px;
-      }
-      .dm-pill{
-        display:inline-flex; align-items:center; gap:8px;
-        height: 28px; padding:0 12px; border-radius: 14px;
-        border: 1px solid rgba(0,0,0,.10);
-        background:#fff;
-        font-size:14px; font-weight:600; letter-spacing:.1px;
-      }
-      .dm-prepay{
-        height: 22px; padding:0 8px; border-radius:999px;
-        border:1px solid #f5d565; background:#fff8e1; color:#8b5e00;
-        font-size:12px; font-weight:700; margin-left:8px;
-      }
-      .dm-zip{
-        font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-        background:#111827; color:#fff; border-color:#111827;
-      }
-      .dm-body{padding:0 12px 12px 12px;}
-      .dm-left{display:flex; align-items:center;}
-      .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
-    </style>
+  /* ---------------- Search embedded in header ---------------- */
+  #searchWrap{
+    display:flex; align-items:center; gap:8px;
+    background:#fff; color:#111827;
+    border-radius:12px; padding:8px 10px;
+    border:1px solid #e5e7eb; box-shadow:0 2px 4px rgba(0,0,0,.08);
+    width: 360px; max-width: 60vw;
+    margin: 0; /* no external margin in header */
+  }
+  #searchWrap .icon{width:18px;height:18px;fill:var(--muted);}
+  #search{
+    flex:1; border:none; outline:none;
+    font-size:14px; color:var(--text); background:transparent;
+  }
+  #search::placeholder{color:#9ca3af;}
+  #searchWrap:focus-within{box-shadow:0 0 0 4px var(--ring), 0 2px 4px rgba(0,0,0,.08); border-color:#d1d5db;}
+  #clearBtn{
+    appearance:none;border:none;background:#f3f4f6;color:#6b7280;
+    width:26px;height:26px;border-radius:8px;cursor:pointer;line-height:26px;text-align:center;font-size:14px;
+  }
+  #clearBtn:hover{background:#e5e7eb;}
+
+  /* ---------------- Map below header ---------------- */
+  #map{
+    position: fixed;
+    top: 80px;  /* match header height */
+    left: 0; right: 0; bottom: 0;
+    width: 100%;
+  }
+
+  /* ---------------- Popup styled like your screenshot ---------------- */
+  .dm-popup{
+    font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    color:#0b0b0c;
+    min-width: 220px; max-width: 320px;
+    background:#fff;
+    border:1px solid rgba(0,0,0,.08);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.14);
+    overflow:hidden;
+  }
+  .dm-head{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:12px; padding:12px 12px;
+    background:#fff;
+  }
+  .dm-title{
+    /* Futura Condensed Extra Bold → fallback to Anton if not present */
+    font-family: "FuturaCE-ExtraBoldCondensed","Anton","Impact",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    font-weight: 800;
+    letter-spacing: .3px;
+    font-size: 22px;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .dm-rowline{
+    display:flex; justify-content:space-between; align-items:center;
+    gap:12px; margin-top:10px;
+  }
+  .dm-pill{
+    display:inline-flex; align-items:center; gap:8px;
+    height: 28px; padding:0 12px; border-radius: 14px;
+    border: 1px solid rgba(0,0,0,.10);
+    background:#fff;
+    font-size:14px; font-weight:600; letter-spacing:.1px;
+  }
+  .dm-prepay{
+    height: 22px; padding:0 8px; border-radius:999px;
+    border:1px solid #f5d565; background:#fff8e1; color:#8b5e00;
+    font-size:12px; font-weight:700; margin-left:8px;
+  }
+  .dm-zip{
+    font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    background:#111827; color:#fff; border-color:#111827;
+  }
+  .dm-body{padding:0 12px 12px 12px;}
+  .dm-left{display:flex; align-items:center;}
+  .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width: 640px){
+    #dm-header{ height: 120px; }
+    #dm-header-inner{ flex-direction: column; justify-content: center; }
+    #map{ top: 120px; }
+    #searchWrap{ width: 100%; max-width: none; }
+  }
+</style>
 
     <script>
 /** GROUPS — label is the fee; prepay indicates prepayment zones */
@@ -201,8 +246,6 @@ function initMap() {
     mapTypeControl: true,
     mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_RIGHT }
   });
-  map.controls[google.maps.ControlPosition.TOP_LEFT]
-    .push(document.getElementById('searchWrap'));
 
   info = new google.maps.InfoWindow();
 
@@ -536,6 +579,40 @@ function centerOfFeature(feature){
   </head>
 
   <body>
+<!-- Header Bar with Logo + Search -->
+<header id="dm-header">
+  <div id="dm-header-inner">
+    <!-- Inline logo for crispness -->
+    <div id="dm-logo">
+      <!-- Inline SVG -->
+     <svg width="1000" height="153" viewBox="0 0 1000 153" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M957.002 7.3623C968.69 7.3623 978.297 10.723 985.823 17.4443C993.35 24.0412 997.202 33.8743 997.379 46.9436V49.184H969.885V48.4372C969.885 44.7031 968.911 41.5914 966.963 39.102C965.015 36.6126 962.049 35.3679 958.064 35.3679C954.168 35.3679 951.158 36.177 949.033 37.7951C946.996 39.4132 945.978 41.4047 945.978 43.7696C945.978 47.1303 947.395 49.6196 950.228 51.2377C953.062 52.8559 957.622 54.5362 963.908 56.2788C971.258 58.3947 977.279 60.6352 981.972 63.0001C986.753 65.2405 990.915 68.9746 994.457 74.2023C997.998 79.4301 999.814 86.5248 999.902 95.4866C999.902 110.672 996.228 121.936 988.878 129.28C981.618 136.624 971.878 140.296 959.658 140.296C945.402 140.296 934.29 136.935 926.321 130.214C918.44 123.492 914.5 111.605 914.5 94.5531H942.259C942.259 101.025 943.454 105.382 945.845 107.622C948.236 109.738 951.955 110.796 957.002 110.796C960.721 110.796 963.776 110.236 966.166 109.116C968.646 107.996 969.885 105.693 969.885 102.208C969.885 99.0962 968.513 96.7935 965.768 95.2999C963.112 93.6818 958.729 92.0015 952.619 90.2589C945.181 88.0184 939.027 85.7157 934.157 83.3508C929.287 80.8614 925.037 76.8162 921.407 71.2151C917.776 65.614 915.961 58.0213 915.961 48.4372C915.961 34.3721 919.813 24.0412 927.516 17.4443C935.308 10.723 945.137 7.3623 957.002 7.3623Z" fill="white"/>
+<path d="M850.738 137.276V9.15625H917.121V39.2777H886.456V57.948H913.951V86.9077H886.456V106.491H917.121V137.276H850.738Z" fill="white"/>
+<path d="M833.297 137.276H797.579V39.8585H777.879V9.15625H853.769V39.8585H833.297V137.276Z" fill="white"/>
+<path d="M788.963 137.276H752.046L749.39 121.012H725.322L722.409 137.276H685.492L717.27 9.15625H760.954L788.963 137.276ZM745.193 93.546L742.881 78.6098C742.824 78.5545 742.709 77.8077 742.538 76.3694C742.424 75.1523 741.824 70.3395 740.739 61.931C740.625 60.9906 740.482 59.7182 740.311 58.1139C740.14 56.4544 739.911 54.3799 739.626 51.8905L738.512 39.7756C738.398 40.9373 738.227 42.2373 737.998 43.6756C737.827 45.1139 737.627 46.6905 737.399 48.4054C736.999 51.8352 736.714 54.2139 736.542 55.5416C736.371 56.8693 736.257 57.6714 736.2 57.948L733.716 73.4651L730.118 93.546H745.193Z" fill="white"/>
+<path d="M690.153 137.276H652.807L650.152 78.8587L649.038 55.5416C648.639 60.0225 648.182 64.3097 647.668 68.4034C647.154 72.4417 646.526 76.3694 645.784 80.1864L634.563 137.276H605.44L595.847 80.1034C595.276 76.7842 594.505 71.0863 593.534 63.0097C593.42 61.7927 593.163 59.3033 592.763 55.5416L591.907 79.1906L588.738 137.276H550.707L566.125 9.15625H610.58L618.032 52.3054C618.66 55.8458 619.202 59.6905 619.659 63.8395C620.173 67.9885 620.63 72.497 621.029 77.3651C621.772 69.2331 622.8 61.9586 624.113 55.5416L633.192 9.15625H677.304L690.153 137.276Z" fill="white"/>
+<path d="M561.126 124.638C562.224 125.429 562.773 126.537 562.773 127.961C562.773 128.911 562.041 131.285 560.577 135.083C559.845 134.925 559.204 134.846 558.655 134.846C557.557 134.846 556.093 135.241 554.263 136.033C552.616 136.824 551.335 137.22 550.42 137.22C549.505 137.22 548.498 136.903 547.4 136.27C535.138 129.623 516.105 119.653 490.301 106.359C490.85 112.214 491.308 120.602 491.674 131.522C491.674 132.788 491.857 134.687 492.223 137.22C492.589 139.752 492.772 141.572 492.772 142.68C492.772 146.478 490.85 149.089 487.007 150.514C485.909 151.147 484.353 151.463 482.34 151.463C480.144 151.463 478.771 150.909 478.222 149.801C473.464 148.377 470.719 145.607 469.987 141.493C467.791 130.098 466.693 116.725 466.693 101.373C466.693 95.8341 466.876 87.6045 467.242 76.6845C467.608 65.6061 467.791 57.2974 467.791 51.7582C467.791 34.9825 466.51 20.4224 463.948 8.07795C463.582 6.17881 464.863 4.91271 467.791 4.27966C469.987 3.96314 472.262 4.08386 474.962 4.27985C478.002 4.50056 479.504 4.75444 482.066 5.70401C484.628 6.49533 486 7.84056 486.183 9.7397C488.928 31.2633 490.118 48.3556 489.752 61.0165C497.255 55.1608 508.266 44.328 517.965 34.674C526.2 26.6027 534.344 18.4522 542.397 10.2226C544.593 9.43125 546.972 9.0356 549.534 9.0356C556.672 9.0356 560.423 11.1721 560.789 15.4452C555.665 25.2574 545.599 36.8897 530.593 50.3419C513.024 66.0099 499.36 80.2453 494.419 86.8923C505.765 92.748 517.203 98.6037 528.733 104.459C541.544 111.423 552.341 118.149 561.126 124.638Z" fill="white"/>
+<path d="M467.907 6.98879C465.618 25.1547 463.412 43.3885 461.287 61.69C458.508 83.3807 457.375 99.9694 457.375 114.475C457.375 119.22 457.539 123.897 457.866 128.506C458.029 130.675 457.048 132.573 454.923 134.2C452.962 135.827 450.673 136.64 448.058 136.64C442.991 136.64 438.741 133.793 435.308 128.1C424.847 111.154 411.852 84.5826 396.324 48.3862C395.997 47.5728 395.588 47.1661 395.098 47.1661C393.953 47.1661 393.218 48.1151 392.891 50.013C390.112 69.3991 388.723 89.8019 388.723 111.221C388.723 121.525 389.05 132.031 389.704 142.741C389.867 146.672 388.478 149.383 385.535 150.875C384.391 151.824 383.165 152.298 381.858 152.298C380.713 152.298 379.242 151.891 377.444 151.078C374.992 150.129 373.439 149.519 372.786 149.248C370.661 148.706 369.353 147.079 368.863 144.368C368.699 142.198 368.536 139.962 368.372 137.657C367.882 130.065 367.637 122.135 367.637 113.865C367.637 99.4949 368.617 81.5323 370.579 59.9772C373.685 27.17 375.401 9.00403 375.728 5.4793C375.891 2.49682 378.915 1.00559 384.8 1.00559C387.579 0.73445 391.665 2.42903 397.059 6.08934C402.29 14.3589 408.746 27.78 416.429 46.3527C423.785 64.112 430.486 77.6009 436.534 86.8194C438.986 68.789 442.571 43.0496 447.801 6.58208C448.292 3.87074 450.662 2.51508 454.912 2.51508C456.383 2.51508 458.099 2.71843 460.061 3.12513C462.676 3.66739 464.229 4.00631 464.719 4.14188C466.354 4.68414 467.416 5.63311 467.907 6.98879Z" fill="white"/>
+<path d="M370.565 122.612C371.634 125.026 372.168 127.137 372.168 128.947C372.168 131.963 371.435 134.774 368.407 137.036C365.379 139.298 364.646 140.164 361.481 140.033C352.36 139.653 347.231 132.718 344.915 122.16C342.422 110.697 339.499 103.389 336.115 95.6973C330.059 96.1498 324.003 96.6023 317.946 97.0547C311 97.8088 305.567 99.6187 301.648 102.484C299.689 107.16 297.908 112.451 294.702 124.366C291.674 135.376 288.735 143.746 285.885 149.478C284.46 152.193 281.432 152.947 276.801 151.74C270.923 150.081 267.805 147.819 267.449 144.953C266.915 139.222 268.874 131.53 273.327 121.877C278.671 110.867 280.808 106.029 281.342 101.353C281.521 99.9958 280.363 98.4876 277.869 96.8285C275.375 95.1694 274.128 93.8874 274.128 92.9825C274.128 92.2284 274.485 91.4743 275.197 90.7201C276.088 89.8152 277.958 89.1365 280.808 88.6841C283.836 88.0808 285.528 87.2512 285.885 86.1955C289.091 78.6543 294.167 64.6277 301.114 44.1158C306.992 26.3186 312.247 12.6692 316.878 3.16729C317.946 1.05576 320.173 0 323.557 0C326.051 0 328.278 0.678703 330.237 2.03611C335.224 5.65587 338.431 11.0855 339.856 18.325C340.924 24.5088 341.904 30.6925 342.795 36.8763C351.701 72.4706 360.946 99.5365 370.565 122.612ZM331.573 81.6708C331.038 76.0903 329.881 69.8311 328.099 62.8933C326.318 56.8603 324.626 50.8274 323.023 44.7945C317.679 57.3128 313.048 69.8311 309.129 82.3495C311.979 81.897 319.461 81.6708 331.573 81.6708Z" fill="white"/>
+<path d="M281.86 81.6362C279.993 85.316 278.219 88.9957 276.538 92.6755C274.297 96.9952 271.87 100.435 269.255 102.995C263.466 109.234 257.678 115.394 251.889 121.474C244.979 128.833 239.901 133.147 233.855 137.738C231.084 139.841 229.545 141.214 227.304 143.294C225.064 145.374 222.477 145.952 220.237 145.952C219.116 145.952 217.809 145.712 216.315 145.232C214.821 144.752 213.141 144.192 211.273 143.552C209.593 142.912 208.379 141.872 207.632 140.432C207.072 133.713 206.792 126.513 206.792 118.834C206.792 110.994 207.165 99.315 207.912 83.7961C208.659 68.2771 209.032 56.5978 209.032 48.7584C209.032 38.3591 208.566 28.8397 207.632 20.2002C207.445 20.0402 205.391 18.2004 201.47 14.6806C199.042 12.6007 197.828 10.6809 197.828 8.92097C197.828 8.12102 198.015 7.32108 198.388 6.52113C199.322 4.60126 201.376 3.48134 204.551 3.16135C206.978 2.84138 209.406 2.60139 211.833 2.44141C227.519 5.32121 243.952 12.8407 261.132 24.9999C265.614 28.1997 269.255 31.5595 272.056 35.0793C281.02 46.4385 285.501 57.0778 285.501 66.9972C285.501 72.1168 284.288 76.9965 281.86 81.6362ZM261.692 55.9579C260.012 45.8785 250.021 36.9991 231.721 29.3196C230.414 56.0379 230.04 84.356 230.601 114.274C251.702 96.1952 262.253 78.9964 262.253 62.6774C262.253 60.4376 262.066 58.1977 261.692 55.9579Z" fill="white"/>
+<path d="M18.0654 137.435L0.785156 110.031H39.8992L5.22196 59.4103L29.5076 42.1778L75.5104 110.031V4.12256H103.649V110.031L150.236 42.1778L171.953 59.4103L137.859 110.031H180.826L162.612 137.435H18.0654Z" fill="white"/>
+</svg>
+
+      <!-- Paste the entire contents of dm-logo.svg here -->
+    </div>
+
+    <!-- Search inside header -->
+    <div id="searchWrap">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>
+      </svg>
+      <input id="search" type="text" placeholder="Search an address (Philly + South NJ)" />
+      <button id="clearBtn" title="Clear">✕</button>
+    </div>
+  </div>
+</header>
+
+    
     <!-- Search control (placed in TOP_LEFT by initMap) -->
     <div id="searchWrap">
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
