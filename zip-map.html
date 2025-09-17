@@ -75,7 +75,7 @@
         color:#0b0b0c;
         min-width: 220px; max-width: 320px;
         background:#fff;
-        border:1px solid rgba(0,0,0,.08);
+        border:none;
         border-radius: 14px;
         box-shadow: 0 10px 30px rgba(0,0,0,.14);
         overflow:hidden;
@@ -226,7 +226,7 @@ function initMap() {
   map.controls[google.maps.ControlPosition.TOP_LEFT]
     .push(document.getElementById('searchWrap'));
 
-  info = new google.maps.InfoWindow();
+  info = new google.maps.InfoWindow({ disableAutoPan: false, closeBox: false }); // removes default "X"
 
   // ---- Data styling with spotlight support ----
   map.data.loadGeoJson('zip-map.json', null, () => {
