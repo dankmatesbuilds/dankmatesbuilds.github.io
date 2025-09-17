@@ -119,6 +119,15 @@
       .dm-body{padding:0 12px 12px 12px;}
       .dm-left{display:flex; align-items:center;}
       .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
+      
+/* Remove Google InfoWindow chrome so only our custom .dm-close shows */
+.gm-style .gm-ui-hover-effect{ display:none !important; }           /* the default "X" */
+.gm-style .gm-style-iw-c{ padding:0 !important; background:transparent !important; box-shadow:none !important; border:none !important; }
+.gm-style .gm-style-iw-d{ overflow:visible !important; }            /* allow our rounded corners/shadow to show cleanly */
+.gm-style .gm-style-iw-tc,
+.gm-style .gm-style-iw-tc::after{ display:none !important; }        /* hides the little pointer triangle */
+
+      
     </style>
 
     <script>
@@ -227,6 +236,11 @@ function initMap() {
     .push(document.getElementById('searchWrap'));
 
   info = new google.maps.InfoWindow({ disableAutoPan: false });
+  // Hide default close button in case CSS loads late
+info.addListener('domready', () => {
+  document.querySelectorAll('.gm-ui-hover-effect').forEach(el => el.style.display = 'none');
+});
+
 
   // ---- Data styling with spotlight support ----
   map.data.loadGeoJson('zip-map.json', null, () => {
