@@ -226,7 +226,7 @@ function initMap() {
   map.controls[google.maps.ControlPosition.TOP_LEFT]
     .push(document.getElementById('searchWrap'));
 
-  info = new google.maps.InfoWindow({ disableAutoPan: false, closeBox: false }); // removes default "X"
+  info = new google.maps.InfoWindow({ disableAutoPan: false });
 
   // ---- Data styling with spotlight support ----
   map.data.loadGeoJson('zip-map.json', null, () => {
