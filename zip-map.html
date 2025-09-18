@@ -582,5 +582,112 @@ function centerOfFeature(feature){
     </div>
 
     <div id="map"></div>
-  </body>
+  
+<!-- Customers/Active override appended safely -->
+<script>
+// Injected ZIP summary (Active = Active_Customers + At_Risk_Customers)
+const ZIP_SUMMARY = {
+  "19003": { total: 2, active: 2 },
+  "19004": { total: 5, active: 5 },
+  "19012": { total: 1, active: 1 },
+  "19018": { total: 3, active: 3 },
+  "19020": { total: 1, active: 0 },
+  "19023": { total: 1, active: 1 },
+  "19027": { total: 6, active: 5 },
+  "19032": { total: 2, active: 2 },
+  "19036": { total: 1, active: 1 },
+  "19038": { total: 3, active: 3 },
+  "19046": { total: 3, active: 2 },
+  "19050": { total: 5, active: 4 },
+  "19072": { total: 4, active: 4 },
+  "19082": { total: 8, active: 3 },
+  "19083": { total: 2, active: 0 },
+  "19095": { total: 2, active: 1 },
+  "19096": { total: 3, active: 2 },
+  "19102": { total: 33, active: 22 },
+  "19103": { total: 119, active: 59 },
+  "19104": { total: 168, active: 117 },
+  "19106": { total: 70, active: 36 },
+  "19107": { total: 96, active: 51 },
+  "19111": { total: 11, active: 8 },
+  "19115": { total: 5, active: 1 },
+  "19116": { total: 1, active: 1 },
+  "19118": { total: 4, active: 2 },
+  "19119": { total: 13, active: 7 },
+  "19120": { total: 17, active: 11 },
+  "19121": { total: 138, active: 87 },
+  "19122": { total: 170, active: 104 },
+  "19123": { total: 201, active: 127 },
+  "19124": { total: 20, active: 15 },
+  "19125": { total: 176, active: 103 },
+  "19126": { total: 5, active: 3 },
+  "19127": { total: 24, active: 15 },
+  "19128": { total: 74, active: 35 },
+  "19129": { total: 15, active: 10 },
+  "19130": { total: 228, active: 151 },
+  "19131": { total: 39, active: 30 },
+  "19132": { total: 39, active: 27 },
+  "19133": { total: 25, active: 15 },
+  "19134": { total: 80, active: 57 },
+  "19135": { total: 13, active: 8 },
+  "19136": { total: 6, active: 2 },
+  "19137": { total: 2, active: 2 },
+  "19138": { total: 10, active: 5 },
+  "19139": { total: 117, active: 76 },
+  "19140": { total: 17, active: 12 },
+  "19141": { total: 9, active: 4 },
+  "19142": { total: 10, active: 9 },
+  "19143": { total: 209, active: 156 },
+  "19144": { total: 51, active: 35 },
+  "19145": { total: 205, active: 146 },
+  "19146": { total: 325, active: 208 },
+  "19147": { total: 334, active: 212 },
+  "19148": { total: 218, active: 154 },
+  "19149": { total: 12, active: 7 },
+  "19150": { total: 3, active: 1 },
+  "19151": { total: 28, active: 23 },
+  "19152": { total: 1, active: 0 },
+  "19153": { total: 9, active: 5 },
+  "19154": { total: 3, active: 0 },
+  "19428": { total: 1, active: 1 }
+};
+
+// Keep a reference to the previous popupHTML (from the original file)
+const __popupPrev = typeof popupHTML === 'function' ? popupHTML : null;
+
+// Override popupHTML to add Customers/Active pills while preserving original look
+function popupHTML({ zip, label, prepay, neighborhood, color }) {
+  // If we have the original function, reconstruct the same DOM but with our extra stats
+  const baseLabel = (label || 'Free Delivery').replace(/\s*Prepay$/, '');
+  const title = neighborhood ? neighborhood : baseLabel;
+  const leftPillText = (label === "Free Delivery" || baseLabel === "Free Delivery") ? "Free Delivery" : baseLabel;
+  const feeDot = `<span class="dm-fee-dot" style="background:${color}"></span>`;
+
+  const stats = ZIP_SUMMARY[String(zip)] || { total: 0, active: 0 };
+
+  return `
+    <div class="dm-popup">
+      <div class="dm-head">
+        <div class="dm-title">${title}</div>
+        <button class="dm-close" onclick="window.__closeInfo()">✕<span class="sr-only">Close</span></button>
+      </div>
+      <div class="dm-body">
+        <div class="dm-rowline">
+          <div class="dm-left">
+            ${feeDot}
+            <span class="dm-pill">${leftPillText}${prepay ? '<span class="dm-prepay">Prepay</span>' : ''}</span>
+          </div>
+          <span class="dm-pill dm-zip">${zip}</span>
+        </div>
+        <div class="dm-rowline">
+          <span class="dm-pill">Customers: ${stats.total}</span>
+          <span class="dm-pill">Active: ${stats.active}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+
+</body>
 </html>
