@@ -192,49 +192,55 @@ const ZIP_NEIGHBORHOOD = {
 function getNeighborhoodForZip(zip){ return ZIP_NEIGHBORHOOD[String(zip)] || null; }
 
 /* Minimal popup (neighborhood title, fee pill, prepay pill, zip chip) */
-function popupHTML({ zip, label, prepay, neighborhood, color }) {
-  const baseLabel = (label || 'Free Delivery').replace(/\s*Prepay$/, '');
-  const title = neighborhood ? neighborhood : baseLabel;
-  const leftPillText = (label === "Free Delivery" || baseLabel === "Free Delivery") ? "Free Delivery" : baseLabel;
-  const feeDot = `<span class="dm-fee-dot" style="background:${color}"></span>`;
+window.popupHTML = function popupHTML(opts){
+  var zip = String(opts.zip || '');
+  var label = opts.label || 'Free Delivery';
+  var prepay = !!opts.prepay;
+  var neighborhood = opts.neighborhood || '';
+  var color = opts.color || '#0ea5e9';
 
-  const stats = (typeof ZIP_SUMMARY !== 'undefined' && ZIP_SUMMARY[String(zip)]) ? ZIP_SUMMARY[String(zip)] : { total: 0, active: 0 };
+  var baseLabel = label.replace(/\s*Prepay$/, '');
+  var title = neighborhood ? neighborhood : baseLabel;
+  var leftPillText = (label === 'Free Delivery' || baseLabel === 'Free Delivery') ? 'Free Delivery' : baseLabel;
+  var feeDot = '<span class="dm-fee-dot" style="background:' + color + '"></span>';
 
-  const peopleIcon = \`
-    <button class="dm-iconbtn" title="View Customers" onclick="window.DM_OPEN_DRAWER && DM_OPEN_DRAWER('${'${zip}'}')">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h2a5 5 0 0 1 10 0h2c0-3.866-3.134-7-7-7z"/>
-      </svg>
-    </button>\`;
+  // make sure ZIP_SUMMARY exists; fall back safely
+  var stats = (window.ZIP_SUMMARY && window.ZIP_SUMMARY[zip]) ? window.ZIP_SUMMARY[zip] : { total: 0, active: 0 };
 
-  return \`
-    <div class="dm-popup">
-      <div class="dm-head">
-        <div class="dm-title">\${title}</div>
-        <button class="dm-close" onclick="window.__closeInfo()">✕<span class="sr-only">Close</span></button>
-      </div>
-      <div class="dm-body">
-        <div class="dm-rowline">
-          <div class="dm-left">
-            \${feeDot}
-            <span class="dm-pill">\${leftPillText}\${prepay ? '<span class="dm-prepay">Prepay</span>' : ''}</span>
-          </div>
-          <span class="dm-pill dm-zip">\${zip}</span>
-        </div>
-        <div class="dm-rowline">
-          <span class="dm-pill">Customers: \${stats.total ?? 0}</span>
-          <span class="dm-pill">Active: \${stats.active ?? 0}</span>
-          \${peopleIcon}
-        </div>
-        <div class="dm-rowline">
-          <span class="dm-pill" id="dm-drive-pill">
-            Drive: <span id="dm-drive-main">calculating…</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  \`;
-}
+  // icon-only drawer button (kept bottom-right). NOTE: use + zip +, not nested ${}
+  var peopleIcon =
+    '<button class="dm-iconbtn" title="View Customers" onclick="window.DM_OPEN_DRAWER && DM_OPEN_DRAWER(\'' + zip + '\')">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+        '<path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h2a5 5 0 0 1 10 0h2c0-3.866-3.134-7-7-7z"/>' +
+      '</svg>' +
+    '</button>';
+
+  var html = ''
+    + '<div class="dm-popup">'
+      + '<div class="dm-head">'
+        + '<div class="dm-title">' + title + '</div>'
+        + '<button class="dm-close" onclick="window.__closeInfo()">✕<span class="sr-only">Close</span></button>'
+      + '</div>'
+      + '<div class="dm-body">'
+        + '<div class="dm-rowline">'
+          + '<div class="dm-left">' + feeDot
+            + '<span class="dm-pill">' + leftPillText + (prepay ? '<span class="dm-prepay">Prepay</span>' : '') + '</span>'
+          + '</div>'
+          + '<span class="dm-pill dm-zip">' + zip + '</span>'
+        + '</div>'
+        + '<div class="dm-rowline">'
+          + '<span class="dm-pill">Customers: ' + (stats.total || 0) + '</span>'
+          + '<span class="dm-pill">Active: ' + (stats.active || 0) + '</span>'
+          + peopleIcon
+        + '</div>'
+        + '<div class="dm-rowline">'
+          + '<span class="dm-pill" id="dm-drive-pill">Drive: <span id="dm-drive-main">calculating…</span></span>'
+        + '</div>'
+      + '</div>'
+    + '</div>';
+
+  return html;
+};
 
 let lastHighlighted = null;
 let marker = null;
