@@ -197,25 +197,43 @@ function popupHTML({ zip, label, prepay, neighborhood, color }) {
   const title = neighborhood ? neighborhood : baseLabel;
   const leftPillText = (label === "Free Delivery" || baseLabel === "Free Delivery") ? "Free Delivery" : baseLabel;
   const feeDot = `<span class="dm-fee-dot" style="background:${color}"></span>`;
-  return `
+
+  const stats = (typeof ZIP_SUMMARY !== 'undefined' && ZIP_SUMMARY[String(zip)]) ? ZIP_SUMMARY[String(zip)] : { total: 0, active: 0 };
+
+  const peopleIcon = \`
+    <button class="dm-iconbtn" title="View Customers" onclick="window.DM_OPEN_DRAWER && DM_OPEN_DRAWER('${'${zip}'}')">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zm0 2c-3.866 0-7 3.134-7 7h2a5 5 0 0 1 10 0h2c0-3.866-3.134-7-7-7z"/>
+      </svg>
+    </button>\`;
+
+  return \`
     <div class="dm-popup">
       <div class="dm-head">
-    <div class="dm-title">${title}</div>
-    <button class="dm-close" onclick="window.__closeInfo()">
-      ✕<span class="sr-only">Close</span>
-    </button>
-  </div>
+        <div class="dm-title">\${title}</div>
+        <button class="dm-close" onclick="window.__closeInfo()">✕<span class="sr-only">Close</span></button>
+      </div>
       <div class="dm-body">
         <div class="dm-rowline">
           <div class="dm-left">
-            ${feeDot}
-            <span class="dm-pill">${leftPillText}${prepay ? '<span class="dm-prepay">Prepay</span>' : ''}</span>
+            \${feeDot}
+            <span class="dm-pill">\${leftPillText}\${prepay ? '<span class="dm-prepay">Prepay</span>' : ''}</span>
           </div>
-          <span class="dm-pill dm-zip">${zip}</span>
+          <span class="dm-pill dm-zip">\${zip}</span>
+        </div>
+        <div class="dm-rowline">
+          <span class="dm-pill">Customers: \${stats.total ?? 0}</span>
+          <span class="dm-pill">Active: \${stats.active ?? 0}</span>
+          \${peopleIcon}
+        </div>
+        <div class="dm-rowline">
+          <span class="dm-pill" id="dm-drive-pill">
+            Drive: <span id="dm-drive-main">calculating…</span>
+          </span>
         </div>
       </div>
     </div>
-  `;
+  \`;
 }
 
 let lastHighlighted = null;
@@ -295,6 +313,7 @@ info.addListener('domready', () => {
     }));
     info.setPosition(e.latLng);
     info.open(map);
+    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, e.feature, e.latLng, zip);
   });
 
   // Hover: thicken outline + centered ZIP label (label-only marker)
@@ -500,6 +519,7 @@ ac.addListener('place_changed', async () => {
     }));
     info.setPosition(location);
     info.open(map);
+    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, e.feature, e.latLng, zip);
   } else {
     clearHighlight(map);
     info.setContent(popupHTML({
@@ -511,6 +531,7 @@ ac.addListener('place_changed', async () => {
     }));
     info.setPosition(location);
     info.open(map);
+    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, e.feature, e.latLng, zip);
   }
 });
 
@@ -575,7 +596,19 @@ function centerOfFeature(feature){
     <script async defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&loading=async&libraries=places,geometry">
     </script>
-  </head>
+  
+<!-- DM v4 overrides -->
+<style>
+  .dm-popup{min-width:360px;max-width:420px;}
+  .dm-rowline{gap:12px;flex-wrap:nowrap;}
+  .dm-pill{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:14px;border:1px solid rgba(0,0,0,.10);white-space:nowrap;}
+  .dm-prepay{margin-left:6px;padding:0 8px;border-radius:999px;border:1px solid #f5d565;background:#fff8e1;color:#8b5e00;font-size:12px;font-weight:700;line-height:1;}
+  .dm-iconbtn{appearance:none;border:none;background:#111827;color:#fff;border-radius:12px;padding:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 0 rgba(0,0,0,.1);}
+  .dm-iconbtn svg{width:18px;height:18px;display:block;}
+  .dm-zip{background:#111827!important;color:#fff!important;border-color:#111827!important;}
+</style>
+
+</head>
 
   <body>
     <!-- Search control (placed in TOP_LEFT by initMap) -->
@@ -726,6 +759,127 @@ function DM_CLOSE_DRAWER(){
   document.getElementById('dmOverlay').classList.remove('open');
   document.getElementById('dmDrawer').classList.remove('open');
 }
+</script>
+
+
+<script>
+(function(){
+  const ORIGIN_ADDR = '2300 Washington Avenue, Philadelphia, PA';
+  let ORIGIN_LOC = null;
+  const dmService = new (google.maps.DistanceMatrixService || function(){})();
+  const geocoder = new (google.maps.Geocoder || function(){})();
+
+  function ensureOrigin(cb){
+    if (ORIGIN_LOC) return cb(ORIGIN_LOC);
+    if (!geocoder || !geocoder.geocode) return cb(null);
+    geocoder.geocode({ address: ORIGIN_ADDR }, (res, status) => {
+      if (status === 'OK' && res && res[0]) {
+        ORIGIN_LOC = res[0].geometry.location;
+        cb(ORIGIN_LOC);
+      } else {
+        cb(null);
+      }
+    });
+  }
+
+  function sampleFeaturePoints(feature, maxPts=12){
+    const pts = [];
+    const geom = feature.getGeometry();
+    function walk(g){
+      const t = g.getType();
+      if (t === 'Polygon'){
+        const rings = g.getArray();
+        rings.forEach(ring => {
+          ring.getArray().forEach(ll => pts.push(ll));
+        });
+      } else if (t === 'MultiPolygon' || t === 'GeometryCollection'){
+        g.getArray().forEach(walk);
+      } else if (t === 'Point'){
+        pts.push(g.get());
+      }
+    }
+    walk(geom);
+    if (pts.length <= maxPts) return pts;
+    const step = Math.ceil(pts.length / maxPts);
+    const out = [];
+    for (let i = 0; i < pts.length; i += step) out.push(pts[i]);
+    return out;
+  }
+
+  function nextRushHourDate(){
+    const d = new Date();
+    const rush = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 17, 30, 0);
+    if (d.getHours() >= 19) rush.setDate(rush.getDate() + 1);
+    return rush;
+  }
+
+  function durToMinText(sec){
+    const m = Math.round(sec/60);
+    return m + 'm';
+  }
+
+  function distanceMatrix(origin, dests, departTime, trafficModel, cb){
+    if (!dmService || !dmService.getDistanceMatrix) return cb(null);
+    const chunkSize = 25;
+    let idx = 0, all = [];
+    function go(){
+      if (idx >= dests.length) return cb(all);
+      const chunk = dests.slice(idx, idx+chunkSize);
+      idx += chunkSize;
+      dmService.getDistanceMatrix({
+        origins: [origin],
+        destinations: chunk,
+        travelMode: google.maps.TravelMode.DRIVING,
+        drivingOptions: { departureTime: departTime, trafficModel: trafficModel }
+      }, (res, status) => {
+        if (status === 'OK' && res.rows && res.rows[0]) {
+          res.rows[0].elements.forEach((el, i) => {
+            if (el && el.status === 'OK') all.push(el.duration_in_traffic || el.duration);
+          });
+        }
+        go();
+      });
+    }
+    go();
+  }
+
+  window.DM_computeDriveTimes = function(map, feature, clickedLatLng, zip){
+    const pillEl = document.getElementById('dm-drive-main');
+    if (pillEl) pillEl.textContent = 'calculating…';
+
+    ensureOrigin((origin) => {
+      const pill = document.getElementById('dm-drive-main');
+      if (!origin || !dmService || !pill){ if (pill) pill.textContent = 'unavailable'; return; }
+      const samples = sampleFeaturePoints(feature, 12);
+      if (!samples.length){ pill.textContent = 'unavailable'; return; }
+
+      distanceMatrix(origin, samples, new Date(Date.now()+5*60*1000), 'best_guess', (list) => {
+        if (!list || !list.length){ pill.textContent = 'unavailable'; return; }
+        let min = Infinity, max = 0;
+        list.forEach(d => {
+          const v = (d && d.value) ? d.value : (d?.duration?.value || 0);
+          if (!v) return;
+          if (v < min) min = v;
+          if (v > max) max = v;
+        });
+        const normalText = durToMinText(min) + ' – ' + durToMinText(max);
+
+        distanceMatrix(origin, samples, nextRushHourDate(), 'pessimistic', (rushList) => {
+          if (!rushList || !rushList.length){ pill.textContent = normalText; return; }
+          let rmin = Infinity, rmax = 0;
+          rushList.forEach(d => {
+            const v = (d && d.value) ? d.value : (d?.duration?.value || 0);
+            if (!v) return;
+            if (v < rmin) rmin = v;
+            if (v > rmax) rmax = v;
+          });
+          const rushText = durToMinText(rmin) + ' – ' + durToMinText(rmax);
+          pill.textContent = normalText + ' (rush ' + rushText + ')';
+        });
+      });
+    });
+  }
+})();
 </script>
 
 </body>
