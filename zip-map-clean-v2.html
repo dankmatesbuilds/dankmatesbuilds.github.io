@@ -25,10 +25,10 @@
 
       let lastHighlighted = null;
       const THEME_COLOR = '#2F80ED'; // friendly modern blue
-      const OUTLINE_WEIGHT = 2.8;
-      const HOVER_WEIGHT = 4.0;
-      const ACTIVE_WEIGHT = 5.0;
-      const FILL_OPACITY = 0.04; // subtle fill
+      const OUTLINE_WEIGHT = 3.5;
+      const HOVER_WEIGHT = 4.5;
+      const ACTIVE_WEIGHT = 5.5;
+      const FILL_OPACITY = 0.06; // subtle fill
 
       function highlightFeature(map, feature){
         clearHighlight(map);
@@ -41,19 +41,26 @@
 
       function initMap() {
         // Map style to hide POI labels/icons like restaurants, museums, shops
-        const minimalMapStyle = [
-          { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "off" }] },
-          { featureType: "poi.business", elementType: "icons", stylers: [{ visibility: "off" }] },
-          { featureType: "poi.attraction", elementType: "labels", stylers: [{ visibility: "off" }] },
-          { featureType: "poi.attraction", elementType: "icons", stylers: [{ visibility: "off" }] },
-          { featureType: "poi.medical", elementType: "labels", stylers: [{ visibility: "off" }] },
-          { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
-          { featureType: "poi.place_of_worship", elementType: "labels", stylers: [{ visibility: "off" }] },
+                const minimalMapStyle = [
+          // Hide POIs and transit icons for a clean look
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
           { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
           { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] },
-          // keep roads and administrative labels, but de-emphasize them slightly
-          { featureType: "road", elementType: "labels.text.fill", stylers: [{ saturation: -30 }, { lightness: -10 }] },
-          { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ saturation: -30 }, { lightness: -10 }] }
+
+          // Roads - soft gray, de-emphasized
+          { featureType: "road", elementType: "geometry", stylers: [{ color: "#e6e6e6" }] },
+          { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#ffffff" }] },
+          { featureType: "road", elementType: "labels.text.fill", stylers: [{ color: "#777777" }] },
+
+          // Administrative boundaries and labels - subtle
+          { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ color: "#666666" }] },
+          { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#dcdcdc" }] },
+
+          // Water - soft blue-gray
+          { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#dfe6ec" }] },
+
+          // Landscape - very light background
+          { featureType: "landscape", elementType: "geometry.fill", stylers: [{ color: "#f8f9fa" }] }
         ];
 
         const map = new google.maps.Map(document.getElementById("map"), {
