@@ -33,7 +33,7 @@
       function highlightFeature(map, feature){
         clearHighlight(map);
         lastHighlighted = feature;
-        map.data.overrideStyle(feature, { strokeWeight: ACTIVE_WEIGHT, zIndex: 1000, fillOpacity: FILL_OPACITY + 0.02 });
+        map.data.overrideStyle(feature, { strokeWeight: 0, fillOpacity: 0 });
       }
       function clearHighlight(map){
         if (lastHighlighted){ map.data.revertStyle(lastHighlighted); lastHighlighted = null; }
@@ -127,12 +127,12 @@
         });
 
         // Base styling for all loaded GeoJSON features
-        map.data.setStyle((feature) => ({
+        map.data.setStyle(() => ({
           fillColor: THEME_COLOR,
-          fillOpacity: FILL_OPACITY,
+          fillOpacity: 0,
           strokeColor: THEME_COLOR,
-          strokeWeight: OUTLINE_WEIGHT,
-          zIndex: 1
+          strokeWeight: 0,
+          zIndex: 0
         }));
 
         map.data.addListener('click', (e) => {
@@ -140,7 +140,7 @@
         });
         map.data.addListener('mouseover', (e) => {
           // on hover, subtly emphasize
-          map.data.overrideStyle(e.feature, { strokeWeight: HOVER_WEIGHT, fillOpacity: FILL_OPACITY + 0.01 });
+          map.data.overrideStyle(e.feature, { strokeWeight: 0, fillOpacity: 0 });
         });
         map.data.addListener('mouseout', (e) => {
           if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
