@@ -72,7 +72,29 @@
                 "elementType": "all",
                 "stylers": [{ "color": "#aee0f4" }]
             }
-        ];
+        
+            ,
+            {
+                "featureType": "poi.business",
+                "elementType": "labels",
+                "stylers": [{ "visibility": "off" }]
+            },
+            {
+                "featureType": "poi.business",
+                "elementType": "labels.icon",
+                "stylers": [{ "visibility": "off" }]
+            },
+            {
+                "featureType": "poi.attraction",
+                "elementType": "labels",
+                "stylers": [{ "visibility": "off" }]
+            },
+            {
+                "featureType": "poi.attraction",
+                "elementType": "labels.icon",
+                "stylers": [{ "visibility": "off" }]
+            }
+];
 
         const map = new google.maps.Map(document.getElementById("map"), {
           zoom: 10,
