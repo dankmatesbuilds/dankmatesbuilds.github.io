@@ -8,10 +8,6 @@
       html,body{height:100%;margin:0;}
       body{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "DM Sans", sans-serif;}
       #map{height:100%;width:100%;}
-
-      /* Minimal boundary map styles */
-      /* polygons: transparent fill, stroked outline */
-      /* Hover and active highlight handled in JS */
     </style>
   </head>
 
@@ -19,20 +15,12 @@
     <div id="map"></div>
 
     <script>
-      // --- KEEP minimal ZIP_GROUPS / ZIP_STYLE if you want to re-enable color later.
-      // (These are left intact but the map styles below currently ignore them.)
-      const ZIP_GROUPS = [
-        /* kept for reference; not applied in minimal style */
-      ];
-      const ZIP_STYLE = new Map();
-
       let lastHighlighted = null;
 
       function getZipFromFeature(feature){
         return feature.getProperty('ZCTA5CE20') || feature.getProperty('ZCTA5CE10') || feature.getProperty('GEOID');
       }
 
-      // Basic centroid / bounds helpers (used for potential future features)
       function centerOfFeature(feature){
         const bounds = new google.maps.LatLngBounds();
         let has = false;
@@ -63,14 +51,11 @@
         const map = new google.maps.Map(document.getElementById("map"), {
           zoom: 10,
           center: { lat: 39.9526, lng: -75.1652 },
-          // very minimal UI — no mapTypeControl, no default UI clutter
           disableDefaultUI: true,
           zoomControl: true
         });
 
-        // Load your GeoJSON of ZIP boundaries (must be in same folder or accessible URL)
         map.data.loadGeoJson('zip-map.json', null, () => {
-          // Simple style: transparent fill, thin outline
           map.data.setStyle((feature) => {
             return {
               fillColor: 'transparent',
@@ -81,12 +66,10 @@
           });
         });
 
-        // Click: only visually highlight the polygon (no popup)
         map.data.addListener('click', (e) => {
           highlightFeature(map, e.feature);
         });
 
-        // Hover effects: visually emphasize boundary (no label/popups)
         map.data.addListener('mouseover', (e) => {
           map.data.overrideStyle(e.feature, { strokeWeight: 2.6 });
         });
@@ -95,12 +78,9 @@
         });
       }
 
-      // Expose callback
       window.initMap = initMap;
     </script>
 
-    <!-- Minimal Maps loader: kept 'geometry' library if you want point-in-polygon later.
-         Replace the API key with YOUR_API_KEY_HERE if you prefer not to include the key here. -->
     <script async defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap&libraries=geometry">
     </script>
