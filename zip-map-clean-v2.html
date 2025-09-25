@@ -2,18 +2,19 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Zip Boundaries - Clean (v2)</title>
+    <title>Zip Boundaries - Clean (v3)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       html,body{height:100%;margin:0;}
-      body{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "DM Sans", sans-serif;}
+      body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "DM Sans", sans-serif; background:#f6f8fa;}
       #map{height:100vh;width:100%;}
-      #debug{position:fixed;left:10px;bottom:10px;z-index:10000;background:rgba(255,255,255,0.9);padding:8px;border-radius:6px;font-size:12px;max-width:320px;max-height:160px;overflow:auto;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+      #debug{position:fixed;left:12px;bottom:12px;z-index:10000;background:rgba(255,255,255,0.95);padding:10px;border-radius:10px;font-size:12px;max-width:360px;max-height:200px;overflow:auto;box-shadow:0 6px 18px rgba(20,30,40,0.08);border:1px solid rgba(20,30,40,0.04);}
+      #debug strong{display:block;margin-bottom:6px;}
     </style>
   </head>
   <body>
     <div id="map"></div>
-    <div id="debug" aria-hidden="false">Debug console:<br/><small id="dbg"></small></div>
+    <div id="debug" aria-hidden="false"><strong>Debug console</strong><small id="dbg"></small></div>
 
     <script>
       const dbg = (msg) => {
@@ -23,67 +24,66 @@
       };
 
       let lastHighlighted = null;
+      const THEME_COLOR = '#2F80ED'; // friendly modern blue
+      const OUTLINE_WEIGHT = 2.8;
+      const HOVER_WEIGHT = 4.0;
+      const ACTIVE_WEIGHT = 5.0;
+      const FILL_OPACITY = 0.04; // subtle fill
+
       function highlightFeature(map, feature){
         clearHighlight(map);
         lastHighlighted = feature;
-        map.data.overrideStyle(feature, { strokeWeight: 3, zIndex: 1000 });
+        map.data.overrideStyle(feature, { strokeWeight: ACTIVE_WEIGHT, zIndex: 1000, fillOpacity: FILL_OPACITY + 0.02 });
       }
       function clearHighlight(map){
         if (lastHighlighted){ map.data.revertStyle(lastHighlighted); lastHighlighted = null; }
       }
 
-      function computeBoundsFromData(geojson){
-        const bounds = new google.maps.LatLngBounds();
-        const addCoords = (coords) => {
-          coords.forEach(pt => {
-            if (typeof pt[0] === 'number' && typeof pt[1] === 'number') {
-              bounds.extend(new google.maps.LatLng(pt[1], pt[0]));
-            } else {
-              // nested array (rings/multipolygon)
-              addCoords(pt);
-            }
-          });
-        };
-
-        if (geojson.type === 'FeatureCollection') {
-          geojson.features.forEach(f => {
-            if (!f.geometry) return;
-            addCoords(f.geometry.coordinates);
-          });
-        } else if (geojson.type === 'Feature') {
-          addCoords(geojson.geometry.coordinates);
-        } else if (geojson.coordinates) {
-          addCoords(geojson.coordinates);
-        }
-        return bounds;
-      }
-
       function initMap() {
+        // Map style to hide POI labels/icons like restaurants, museums, shops
+        const minimalMapStyle = [
+          { featureType: "poi.business", elementType: "labels", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.business", elementType: "icons", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.attraction", elementType: "labels", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.attraction", elementType: "icons", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.medical", elementType: "labels", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.park", elementType: "labels", stylers: [{ visibility: "off" }] },
+          { featureType: "poi.place_of_worship", elementType: "labels", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+          { featureType: "transit.station", elementType: "labels", stylers: [{ visibility: "off" }] },
+          // keep roads and administrative labels, but de-emphasize them slightly
+          { featureType: "road", elementType: "labels.text.fill", stylers: [{ saturation: -30 }, { lightness: -10 }] },
+          { featureType: "administrative", elementType: "labels.text.fill", stylers: [{ saturation: -30 }, { lightness: -10 }] }
+        ];
+
         const map = new google.maps.Map(document.getElementById("map"), {
           zoom: 10,
           center: { lat: 39.9526, lng: -75.1652 },
           disableDefaultUI: true,
-          zoomControl: true
+          zoomControl: true,
+          styles: minimalMapStyle,
         });
 
-        map.data.setStyle(() => ({
-          fillColor: 'transparent',
-          fillOpacity: 0,
-          strokeColor: '#444',
-          strokeWeight: 1.2
+        // Base styling for all loaded GeoJSON features
+        map.data.setStyle((feature) => ({
+          fillColor: THEME_COLOR,
+          fillOpacity: FILL_OPACITY,
+          strokeColor: THEME_COLOR,
+          strokeWeight: OUTLINE_WEIGHT,
+          zIndex: 1
         }));
 
         map.data.addListener('click', (e) => {
           highlightFeature(map, e.feature);
         });
         map.data.addListener('mouseover', (e) => {
-          map.data.overrideStyle(e.feature, { strokeWeight: 2.6 });
+          // on hover, subtly emphasize
+          map.data.overrideStyle(e.feature, { strokeWeight: HOVER_WEIGHT, fillOpacity: FILL_OPACITY + 0.01 });
         });
         map.data.addListener('mouseout', (e) => {
           if (lastHighlighted !== e.feature) map.data.revertStyle(e.feature);
         });
 
-        // Try to load GeoJSON using fetch and handle common errors.
         dbg('Attempting to fetch zip-map.json (relative path).');
         fetch('zip-map.json')
           .then(resp => {
@@ -95,9 +95,24 @@
           .then(data => {
             dbg('Successfully fetched GeoJSON — adding to map.');
             map.data.addGeoJson(data);
-            // Fit map to bounds of features (if any)
             try {
-              const bounds = computeBoundsFromData(data);
+              const bounds = new google.maps.LatLngBounds();
+              const addCoords = (coords) => {
+                coords.forEach(pt => {
+                  if (typeof pt[0] === 'number' && typeof pt[1] === 'number') {
+                    bounds.extend(new google.maps.LatLng(pt[1], pt[0]));
+                  } else {
+                    addCoords(pt);
+                  }
+                });
+              };
+              if (data.type === 'FeatureCollection') {
+                data.features.forEach(f => { if (f.geometry) addCoords(f.geometry.coordinates); });
+              } else if (data.geometry) {
+                addCoords(data.geometry.coordinates);
+              } else if (data.coordinates) {
+                addCoords(data.coordinates);
+              }
               if (!bounds.isEmpty()) {
                 map.fitBounds(bounds);
                 dbg('Fitted map to GeoJSON bounds.');
@@ -112,25 +127,16 @@
           .catch(err => {
             console.error('Failed to load zip-map.json', err);
             dbg('Error loading zip-map.json: ' + err.message + 
-                '<br/><strong>Common causes:</strong> viewing the file via the GitHub file preview (github.com) will NOT render the page — use GitHub Pages or run a local web server. Also check CORS, file path, and API key restrictions.');
+                '<br/><strong>Common causes:</strong> viewing via GitHub file preview will NOT render as an app — use GitHub Pages or a local server. Also check CORS, file path, and API key restrictions.');
           });
 
-        // Helpful note in console
         dbg('If map tiles/errors appear, open DevTools Console for detailed errors (API key, CORS, blocked by referrer, etc.).');
       }
 
       window.initMap = initMap;
     </script>
 
-    <!--
-      IMPORTANT NOTES:
-      1) To preview this HTML from a GitHub repo, enable GitHub Pages for the branch (Settings -> Pages)
-         or use a local server (e.g., `python -m http.server`) and open http://localhost:8000/.
-      2) If your Google Maps API key is restricted by HTTP referrers, it must allow the domain used for testing
-         (localhost, yourdomain.github.io, rawgit preview domain, etc.). Check the Cloud Console API restrictions.
-      3) If the GeoJSON fails to load due to CORS, host zip-map.json on the same origin (GitHub Pages or same server).
-    -->
-
+    <!-- Replace API key with YOUR_API_KEY_HERE if you prefer not to expose a key in the file -->
     <script async defer
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDihHSv5KORtpnnMC7umGgXWBJm5NSduc8&callback=initMap">
     </script>
