@@ -680,10 +680,10 @@ ac.addListener('place_changed', async () => {
     clearHighlight(map);
     info.setContent(popupHTML({
       zip: '—',
-      label: 'Free Delivery',
+      label: 'Shipping',
       prepay: false,
-      neighborhood: null,
-      color: getColor('Free Delivery')
+      neighborhood: 'Outside delivery zone',
+      color: getColor && getColor('Shipping') ? getColor('Shipping') : getColor('Free Delivery')
     }));
     info.setPosition(location);
     info.open(map);
