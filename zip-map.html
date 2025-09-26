@@ -513,17 +513,29 @@ info.addListener('domready', () => {
   }
 
   async function __geocodeAndShow(q){
-    try {
+  try {
+    // ZIP-specific: exact geocode via componentRestrictions.postalCode
+    if (/^\d{5}$/.test(q)) {
       const { results } = await geocoder.geocode({
-        address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
+        componentRestrictions: { country: 'US', postalCode: q }
       });
       if (results && results[0]?.geometry?.location){
         __handleFoundLocation(results[0].geometry.location);
         return true;
       }
-    } catch (err) {}
-    return false;
-  }
+    }
+
+    // Fallback: free-form address with bounds bias
+    const { results } = await geocoder.geocode({
+      address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
+    });
+    if (results && results[0]?.geometry?.location){
+      __handleFoundLocation(results[0].geometry.location);
+      return true;
+    }
+  } catch (err) {}
+  return false;
+}
 
   input.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
