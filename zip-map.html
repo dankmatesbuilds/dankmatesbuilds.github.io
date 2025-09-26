@@ -538,6 +538,27 @@ info.addListener('domready', () => {
 }
 
   input.addEventListener('keydown', (e) => {
+// Fallbacks to ensure Enter works even when the Places dropdown intercepts keydown
+  google.maps.event.addDomListener(input, 'keydown', function(ev){
+    if ((ev.key === 'Enter' || ev.keyCode === 13)) {
+      const qv = input.value.trim();
+      if (/^\d{5}$/.test(qv)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        __geocodeAndShow(qv);
+      }
+    }
+  });
+  input.addEventListener('keyup', (ev) => {
+    if (ev.key === 'Enter') {
+      const qv = input.value.trim();
+      if (/^\d{5}$/.test(qv)) {
+        ev.preventDefault();
+        __geocodeAndShow(qv);
+      }
+    }
+  });
+
     if (e.key !== 'Enter') return;
     const q = input.value.trim();
     if (!q) return;
@@ -590,6 +611,17 @@ info.addListener('domready', () => {
 
 // Search handler — camera stays on the address
 ac.addListener('place_changed', async () => {
+      // ZIP-only fast path: if the box has a 5-digit ZIP, force ZIP geocode (no click required)
+      (function(){
+        try {
+          const q = input.value.trim();
+          if (/^\d{5}$/.test(q)) {
+            __geocodeAndShow(q);
+            return;
+          }
+        } catch(e){}
+      })();
+
   const place = ac.getPlace();
   let location = place?.geometry?.location || null;
   const isStreetAddress = (place.address_components || []).some(c => c.types.includes('street_number'));
