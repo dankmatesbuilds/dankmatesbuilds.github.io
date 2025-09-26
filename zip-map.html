@@ -139,9 +139,9 @@
 /** GROUPS — label is the fee; prepay indicates prepayment zones */
 const ZIP_GROUPS = [
   { label:"$6",        fee:6,  prepay:false, color:getColor("$6"),        zips:["19153","19131","19151","19140","19134","19129","19142"] },
-  { label:"$6 Prepay", fee:6,  prepay:true,  color:getColor("$6 Prepay"), zips:["19032","19079","19023","19050"] },
+  { label:"$6 Prepay", fee:6,  prepay:true,  color:getColor("$6 Prepay"), zips:["19032","19079","19023"] },
   { label:"$10",       fee:10, prepay:false, color:getColor("$10"),       zips:["19144","19141","19120","19124","19137"] },
-  { label:"$10 Prepay",fee:10, prepay:true,  color:getColor("$10 Prepay"),zips:["19082","19004","19074","19066","19036","19096","19018","19113","19029"] },
+  { label:"$10 Prepay",fee:10, prepay:true,  color:getColor("$10 Prepay"),zips:["19082","19004","19074","19066","19036","19096","19018","19113","19029","19050"] },
   { label:"$15",       fee:15, prepay:false, color:getColor("$15"),       zips:["19128","19119","19138","19126","19135","19149","19012","19127"] },
   { label:"$15 Prepay",fee:15, prepay:true,  color:getColor("$15 Prepay"),zips:["19072","19003","19083","19078","19076","19043","19070","19033","19026"] },
   { label:"$20",       fee:20, prepay:false, color:getColor("$20"),       zips:["19118","19150","19111","19136","19152"] },
@@ -464,10 +464,102 @@ info.addListener('domready', () => {
     fields: ['geometry','formatted_address','address_components','place_id'],
     bounds: phillySJBounds,
     strictBounds: false,
-    types: ['address'],
+    types: ['geocode'],
     componentRestrictions: { country: ['us'] }
   });
   const geocoder = new google.maps.Geocoder();
+  // --- Added: services + Enter key handler for partial and ZIP searches ---
+  const acService = new google.maps.places.AutocompleteService();
+  const placesSvc = new google.maps.places.PlacesService(map);
+
+  function __handleFoundLocation(location){
+    if (!location) return;
+
+    if (!marker) marker = new google.maps.Marker({ map, position: location });
+    else marker.setPosition(location);
+
+    map.panTo(location);
+    map.setZoom(17);
+
+    const containing = findContainingFeature(map, location);
+    if (containing) {
+      highlightFeature(map, containing);
+      const zip = getZipFromFeature(containing);
+      const s = ZIP_STYLE.get(String(zip)) || {};
+      const neighborhood = getNeighborhoodForZip(zip);
+      info.setContent(popupHTML({
+        zip,
+        label: s.label || 'Free Delivery',
+        prepay: !!s.prepay,
+        neighborhood,
+        color: s.color || getColor('Free Delivery')
+      }));
+      info.setPosition(location);
+      info.open(map);
+      if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, String(zip));
+    } else {
+      clearHighlight(map);
+      info.setContent(popupHTML({
+        zip: '—',
+        label: 'Free Delivery',
+        prepay: false,
+        neighborhood: null,
+        color: getColor('Free Delivery')
+      }));
+      info.setPosition(location);
+      info.open(map);
+      if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, '—');
+    }
+  }
+
+  async function __geocodeAndShow(q){
+    try {
+      const { results } = await geocoder.geocode({
+        address: q, bounds: phillySJBounds, componentRestrictions: { country: 'US' }
+      });
+      if (results && results[0]?.geometry?.location){
+        __handleFoundLocation(results[0].geometry.location);
+        return true;
+      }
+    } catch (err) {}
+    return false;
+  }
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const q = input.value.trim();
+    if (!q) return;
+    e.preventDefault();
+
+    // ZIP-only search: 5 digits
+    if (/^\d{5}$/.test(q)) {
+      __geocodeAndShow(q);
+      return;
+    }
+
+    // Partial address: pick the top prediction and fetch its details
+    acService.getPlacePredictions(
+      { input: q, bounds: phillySJBounds, componentRestrictions: { country: 'us' } },
+      (preds, status) => {
+        const first = preds && preds[0];
+        if (first && first.place_id){
+          placesSvc.getDetails(
+            { placeId: first.place_id, fields: ['geometry','formatted_address','address_components','place_id'] },
+            (place, s) => {
+              if (s === google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location){
+                __handleFoundLocation(place.geometry.location);
+              } else {
+                __geocodeAndShow(q);
+              }
+            }
+          );
+        } else {
+          __geocodeAndShow(q);
+        }
+      }
+    );
+  });
+
 
   const clearEl = document.getElementById('clearBtn');
   if (clearEl) {
@@ -524,7 +616,7 @@ ac.addListener('place_changed', async () => {
     }));
     info.setPosition(location);
     info.open(map);
-    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, e.feature, e.latLng, zip);
+    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, zip);
   } else {
     clearHighlight(map);
     info.setContent(popupHTML({
@@ -536,7 +628,7 @@ ac.addListener('place_changed', async () => {
     }));
     info.setPosition(location);
     info.open(map);
-    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, e.feature, e.latLng, zip);
+    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, zip);
   }
 });
 
