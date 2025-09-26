@@ -501,11 +501,15 @@ info.addListener('domready', () => {
       clearHighlight(map);
       info.setContent(popupHTML({
         zip: '—',
-        label: 'Free Delivery',
+        label: 'Shipping',
         prepay: false,
-        neighborhood: null,
-        color: getColor('Free Delivery')
+        neighborhood: 'Outside delivery zone',
+        color: getColor && getColor('Shipping') ? getColor('Shipping') : getColor('Free Delivery')
       }));
+      info.setPosition(location);
+      info.open(map);
+      if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, '—');
+    }));
       info.setPosition(location);
       info.open(map);
       if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, '—');
@@ -538,6 +542,20 @@ info.addListener('domready', () => {
 }
 
   input.addEventListener('keydown', (e) => {
+// Capture-phase listener so Chrome + Places Autocomplete can't swallow Enter on ZIP-only input
+  document.addEventListener('keydown', function(ev){
+    try {
+      if ((ev.key === 'Enter' || ev.keyCode === 13) && document.activeElement === input) {
+        const qv = input.value.trim();
+        if (/^\d{5}$/.test(qv)) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          __geocodeAndShow(qv);
+        }
+      }
+    } catch(e){}
+  }, true);
+
 // Fallbacks to ensure Enter works even when the Places dropdown intercepts keydown
   google.maps.event.addDomListener(input, 'keydown', function(ev){
     if ((ev.key === 'Enter' || ev.keyCode === 13)) {
