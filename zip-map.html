@@ -509,11 +509,8 @@ info.addListener('domready', () => {
       info.setPosition(location);
       info.open(map);
       if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, '—');
-    }));
-      info.setPosition(location);
-      info.open(map);
-      if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, '—');
     }
+    if (window.DM_boot) try { window.DM_boot(); } catch(e) {}
   }
 
   async function __geocodeAndShow(q){
@@ -922,7 +919,7 @@ function DM_CLOSE_DRAWER(){
 
 
 <script>
-(function(){
+window.DM_boot = function(){
   const ORIGIN_ADDR = '2300 Washington Avenue, Philadelphia, PA';
   let ORIGIN_LOC = null;
   const dmService = new (google.maps.DistanceMatrixService || function(){})();
@@ -1038,7 +1035,7 @@ function DM_CLOSE_DRAWER(){
       });
     });
   }
-})();
+};
 </script>
 
 </body>
