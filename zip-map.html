@@ -1021,13 +1021,7 @@ window.DM_boot = function(){
     go();
   }
 
-  window.DM_computeDriveTimes = function(map, feature, clickedLatLng, zip){
-    const pillEl = document.getElementById('dm-drive-main');
-    if (pillEl) pillEl.textContent = 'calculating…';
-
-    ensureOrigin((origin) => {
-      const pill = document.getElementById('dm-drive-main');
-      if (!origin || !dmService || !pill){ if (pill) pill.textContent = 'unavailable'; return; }
+  window.
       const samples = sampleFeaturePoints(feature, 12);
       if (!samples.length){ pill.textContent = 'unavailable'; return; }
 
