@@ -173,7 +173,15 @@ const ZIP_STYLE = (() => {
   const m = new Map();
   ZIP_GROUPS.forEach(g => g.zips.forEach(z => m.set(String(z), { color: g.color, label: g.label, fee: g.fee, prepay: g.prepay })));
   return m;
-})();
+})()
+/** Rush fee rules based on distance fee tier */
+function DM_rushFor(fee){
+  if (fee == null || isNaN(fee)) return null;
+  if (fee >= 15) return { text: "No Rush Available", type: "none" };
+  if (fee >= 6)  return { text: "$15 Rush Fee", type: "fee15" };
+  return { text: "$10 Rush Fee", type: "fee10" }; // fee === 0 (Free Delivery)
+}
+;
 
 /* Neighborhood lookup (extend as needed) */
 const ZIP_NEIGHBORHOOD = {
@@ -197,6 +205,8 @@ window.popupHTML = function popupHTML(opts){
   var prepay = !!opts.prepay;
   var neighborhood = opts.neighborhood || '';
   var color = opts.color || '#0ea5e9';
+  var fee = (typeof opts.fee === 'number') ? opts.fee : null;
+  var rush = (zip && zip !== '—' && label !== 'Shipping') ? DM_rushFor(fee) : null;
 
   var baseLabel = label.replace(/\s*Prepay$/, '');
   var title = neighborhood ? neighborhood : baseLabel;
@@ -310,6 +320,7 @@ info.addListener('domready', () => {
     highlightFeature(map, e.feature);
     const neighborhood = getNeighborhoodForZip(zip);
     info.setContent(popupHTML({
+      fee: (s && typeof s.fee === 'number') ? s.fee : 0,
       zip,
       label: s.label || 'Free Delivery',
       prepay: !!s.prepay,
@@ -488,6 +499,7 @@ info.addListener('domready', () => {
       const s = ZIP_STYLE.get(String(zip)) || {};
       const neighborhood = getNeighborhoodForZip(zip);
       info.setContent(popupHTML({
+      fee: (s && typeof s.fee === 'number') ? s.fee : 0,
         zip,
         label: s.label || 'Free Delivery',
         prepay: !!s.prepay,
@@ -667,6 +679,7 @@ ac.addListener('place_changed', async () => {
     const neighborhood = getNeighborhoodForZip(zip);
 
     info.setContent(popupHTML({
+      fee: (s && typeof s.fee === 'number') ? s.fee : 0,
       zip,
       label: s.label || 'Free Delivery',
       prepay: !!s.prepay,
