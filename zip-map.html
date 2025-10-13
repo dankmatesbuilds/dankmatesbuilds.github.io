@@ -225,39 +225,40 @@ window.popupHTML = function popupHTML(opts){
       '</svg>' +
     '</button>';
 
-  var html = ''
-    + '<div class="dm-popup">'
-      + '<div class="dm-head">'
-        + '<div class="dm-title">' + title + '</div>'
-        + '<button class="dm-close" onclick="window.__closeInfo()">✕<span class="sr-only">Close</span></button>'
+var html = ''
+  + '<div class="dm-popup">'
+    + '<div class="dm-head">'
+      + '<div class="dm-title">' + title + '</div>'
+      + '<button class="dm-close" onclick="window.__closeInfo()">✕<span class="sr-only">Close</span></button>'
+    + '</div>'
+    + '<div class="dm-body">'
+      + '<div class="dm-rowline">'
+        + '<div class="dm-left">' + feeDot
+          + '<span class="dm-pill">' + leftPillText + (prepay ? '<span class="dm-prepay">Prepay</span>' : '') + '</span>'
+        + '</div>'
+        + '<span class="dm-pill dm-zip">' + zip + '</span>'
       + '</div>'
-      + '<div class="dm-body">'
-        + '<div class="dm-rowline">'
-          + '<div class="dm-left">' + feeDot
-            + '<span class="dm-pill">' + leftPillText + (prepay ? '<span class="dm-prepay">Prepay</span>' : '') + '</span>'
-          + '</div>'
-          + '<span class="dm-pill dm-zip">' + zip + '</span>'
-        + '</div>'
-        + '<div class="dm-rowline">'
-          + '<span class="dm-pill">Customers: ' + (stats.total || 0) + '</span>'
-          + '<span class="dm-pill">Active: ' + (stats.active || 0) + '</span>'
-          + peopleIcon
-        + '</div>'
-        + '<div class="dm-rowline">'
-          + (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : '')
-        + '</div>'
-        + '<div class="dm-rowline">'
-          + (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : '')
-        + '</div>'
-        + '<div class="dm-rowline">'
-
-        + '<div class="dm-rowline">'
-          + '<span class="dm-pill" id="dm-drive-pill">Drive: <span id="dm-drive-main">calculating…</span></span>'
-        + '</div>'
+      + '<div class="dm-rowline">'
+        + '<span class="dm-pill">Customers: ' + (stats.total || 0) + '</span>'
+        + '<span class="dm-pill">Active: ' + (stats.active || 0) + '</span>'
+        + peopleIcon
       + '</div>'
-    + '</div>';
 
-  return html;
+      // Rush (fee-based with label fallback)
+      + '<div class="dm-rowline">'
+        + (rush ? '<span class="dm-pill">Rush: ' + rush.text + '</span>'
+                : (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : ''))
+      + '</div>'
+
+      // Drive
+      + '<div class="dm-rowline">'
+        + '<span class="dm-pill" id="dm-drive-pill">Drive: <span id="dm-drive-main">calculating…</span></span>'
+      + '</div>'
+    + '</div>'
+  + '</div>';
+
+return html;
+
 };
 
 let lastHighlighted = null;
