@@ -204,6 +204,7 @@ window.popupHTML = function popupHTML(opts){
   var label = opts.label || 'Free Delivery';
   var prepay = !!opts.prepay;
   var neighborhood = opts.neighborhood || '';
+  var rushText = (opts.label === 'Shipping') ? null : DM_labelToRush(opts.label || '');
   var color = opts.color || '#0ea5e9';
   var fee = (typeof opts.fee === 'number') ? opts.fee : null;
   var rush = (zip && zip !== '—' && label !== 'Shipping') ? DM_rushFor(fee) : null;
@@ -243,10 +244,7 @@ window.popupHTML = function popupHTML(opts){
           + peopleIcon
         + '</div>'
         + '<div class="dm-rowline">'
-          + (rush ? '<span class="dm-pill">Rush: ' + rush.text + '</span>' : '')
-        + '</div>'
-        + '<div class="dm-rowline">'
-          + (rush ? '<span class="dm-pill">Rush: ' + rush.text + '</span>' : '')
+          + (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : '')
         + '</div>'
         + '<div class="dm-rowline">'
           + '<span class="dm-pill" id="dm-drive-pill">Drive: <span id="dm-drive-main">calculating…</span></span>'
@@ -387,7 +385,20 @@ info.addListener('domready', () => {
     ZIP_GROUPS.forEach(g => m.set(g.label, g));
     if (!m.has("Free Delivery")) m.set("Free Delivery", { label:"Free Delivery", color:getColor("Free Delivery"), prepay:false, fee:0 });
     return m;
-  })();
+  })()
+/** Rush fee text by *label* (manual/static rules) */
+function DM_labelToRush(label){
+  try{
+    label = String(label || '').toLowerCase();
+    if (label.includes('$20')) return 'No Rush Available';
+    if (label.includes('$15')) return 'No Rush Available';
+    if (label.includes('$10')) return '$15 Rush Fee';
+    if (label.includes('$6'))  return '$15 Rush Fee';
+    if (label.includes('free')) return '$10 Rush Fee';
+  }catch(e){}
+  return null;
+}
+;
 
   const legend = document.createElement('div');
   legend.style.background = '#fff';
