@@ -239,20 +239,11 @@ var html = ''
         + '<span class="dm-pill dm-zip">' + zip + '</span>'
       + '</div>'
       + '<div class="dm-rowline">'
-        + '<span class="dm-pill">Customers: ' + (stats.total || 0) + '</span>'
-        + '<span class="dm-pill">Active: ' + (stats.active || 0) + '</span>'
-        + peopleIcon
-      + '</div>'
-
-      // Rush (fee-based with label fallback)
-      + '<div class="dm-rowline">'
-        + (rush ? '<span class="dm-pill">Rush: ' + rush.text + '</span>'
-                : (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : ''))
-      + '</div>'
-
-      // Drive
-      + '<div class="dm-rowline">'
-        + '<span class="dm-pill" id="dm-drive-pill">Drive: <span id="dm-drive-main">calculating…</span></span>'
+        + (
+            rush
+              ? '<span class="dm-pill">Rush: ' + rush.text + '</span>'
+              : (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : '<span class="dm-pill">Rush: —</span>')
+          )
       + '</div>'
     + '</div>'
   + '</div>';
@@ -339,8 +330,7 @@ info.addListener('domready', () => {
     }));
     info.setPosition(e.latLng);
     info.open(map);
-    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, e.feature, e.latLng, zip);
-  });
+});
 
   // Hover: thicken outline + centered ZIP label (label-only marker)
   map.data.addListener('mouseover', (e) => {
@@ -531,8 +521,7 @@ function DM_labelToRush(label){
       }));
       info.setPosition(location);
       info.open(map);
-      if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, String(zip));
-    } else {
+} else {
       clearHighlight(map);
       info.setContent(popupHTML({
         zip: '—',
@@ -543,8 +532,7 @@ function DM_labelToRush(label){
       }));
       info.setPosition(location);
       info.open(map);
-      if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, '—');
-    }
+}
     if (window.DM_boot) try { window.DM_boot(); } catch(e) {}
   }
 
@@ -711,8 +699,7 @@ ac.addListener('place_changed', async () => {
     }));
     info.setPosition(location);
     info.open(map);
-    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, zip);
-  } else {
+} else {
     clearHighlight(map);
     info.setContent(popupHTML({
       zip: '—',
@@ -723,8 +710,7 @@ ac.addListener('place_changed', async () => {
     }));
     info.setPosition(location);
     info.open(map);
-    if (window.DM_computeDriveTimes) DM_computeDriveTimes(map, null, location, zip);
-  }
+}
 });
 
 }
