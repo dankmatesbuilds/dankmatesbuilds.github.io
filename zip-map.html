@@ -221,10 +221,8 @@ const ZIP_NEIGHBORHOOD = {
 function getNeighborhoodForZip(zip){ return ZIP_NEIGHBORHOOD[String(zip)] || null; }
 
 /* Minimal popup (neighborhood title, fee pill, prepay pill, zip chip) */
-window.popupHTML = function popupHTML(opts){
-  \1
+window.popupHTML = function popupHTML(opts){  var zip = String(opts.zip || '—');var label = opts.label || 'Free Delivery';
   var rushOnlyText = DM_getRushTextForZip(zip);
-  var label = opts.label || 'Free Delivery';
   var prepay = !!opts.prepay;
   var neighborhood = opts.neighborhood || '';
   var rushText = (opts.label === 'Shipping') ? null : DM_labelToRush(opts.label || '');
