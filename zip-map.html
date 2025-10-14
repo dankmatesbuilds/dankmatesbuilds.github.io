@@ -260,7 +260,6 @@ let hoverLabelMarker = null;   // label-only marker for hover
 let activeLegend = null;       // legend spotlight filter
 window.__closeInfo = () => { if (info) info.close(); };
 
-
 function initMap() {
   const map = new google.maps.Map(document.getElementById("map"), {
     zoom: 10,
@@ -280,7 +279,6 @@ function initMap() {
 info.addListener('domready', () => {
   document.querySelectorAll('.gm-ui-hover-effect').forEach(el => el.style.display = 'none');
 });
-
 
   // ---- Data styling with spotlight support ----
   map.data.loadGeoJson('zip-map.json', null, () => {
@@ -630,7 +628,6 @@ function DM_labelToRush(label){
       }
     );
   });
-
 
   const clearEl = document.getElementById('clearBtn');
   if (clearEl) {
