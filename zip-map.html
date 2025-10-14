@@ -149,6 +149,28 @@ const ZIP_GROUPS = [
     zips:["19022","19094","19081","19064","19041","19010","19085","19428","19035","19027","19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007","19008"] }
 ];
 
+/* === Build Rush text per ZIP from ZIP_GROUPS === */
+const DM_RUSH_BY_ZIP = (() => {
+  const byZip = {};
+  try {
+    ZIP_GROUPS.forEach(g => {
+      const fee = Number(g.fee) || 0;
+      let text = null;
+      if (fee >= 15) text = "No Rush Available";
+      else if (fee >= 6) text = "$15 Rush Fee";
+      else text = "$10 Rush Fee"; // Free
+      (g.zips || []).forEach(z => { byZip[String(z)] = text; });
+    });
+  } catch (_) {}
+  return byZip;
+})();
+
+function DM_getRushTextForZip(zip){
+  const z = String(zip || "").slice(0,5);
+  return DM_RUSH_BY_ZIP[z] || null; // null -> will render "—"
+}
+
+
 function getColor(label){
   switch(label){
     case "Free Delivery": return cssVar('--free');
@@ -200,7 +222,8 @@ function getNeighborhoodForZip(zip){ return ZIP_NEIGHBORHOOD[String(zip)] || nul
 
 /* Minimal popup (neighborhood title, fee pill, prepay pill, zip chip) */
 window.popupHTML = function popupHTML(opts){
-  var zip = String(opts.zip || '');
+  \1
+  var rushOnlyText = DM_getRushTextForZip(zip);
   var label = opts.label || 'Free Delivery';
   var prepay = !!opts.prepay;
   var neighborhood = opts.neighborhood || '';
