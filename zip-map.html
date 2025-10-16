@@ -148,7 +148,7 @@ const ZIP_GROUPS = [
   { label:"$20 Prepay",fee:20, prepay:true,  color:getColor("$20 Prepay"),
     zips:["19022","19094","19081","19064","19041","19010","19085","19428","19035","19027","19114","19115","19154","19116","19046","19038","19095","19444","19428","19020","19021","19007","19008"] }
 ];
-<script>
+
 /* ==== HARD-CODED RUSH FEES BY ZIP (auto-generated) ==== */
 window.DM_RUSH_BY_ZIP = {
   "19003": "No Rush Available",
@@ -156,7 +156,7 @@ window.DM_RUSH_BY_ZIP = {
   "19007": "No Rush Available",
   "19008": "No Rush Available",
   "19010": "No Rush Available",
-  "19012": "No Rush Available",
+  "19012": "$15 PREPAY",
   "19018": "$15 Rush Fee",
   "19020": "No Rush Available",
   "19021": "No Rush Available",
@@ -189,14 +189,7 @@ window.DM_RUSH_BY_ZIP = {
   "19094": "No Rush Available",
   "19095": "No Rush Available",
   "19096": "$15 Rush Fee",
-  "19102": "$10 Rush Fee",
-  "19103": "$10 Rush Fee",
-  "19104": "$10 Rush Fee",
-  "19106": "$10 Rush Fee",
-  "19107": "$10 Rush Fee",
-  "19109": "$10 Rush Fee",
   "19111": "No Rush Available",
-  "19112": "$10 Rush Fee",
   "19113": "$15 Rush Fee",
   "19114": "No Rush Available",
   "19115": "No Rush Available",
@@ -204,34 +197,21 @@ window.DM_RUSH_BY_ZIP = {
   "19118": "No Rush Available",
   "19119": "No Rush Available",
   "19120": "$15 Rush Fee",
-  "19121": "$10 Rush Fee",
-  "19122": "$10 Rush Fee",
-  "19123": "$10 Rush Fee",
   "19124": "$15 Rush Fee",
-  "19125": "$10 Rush Fee",
   "19126": "No Rush Available",
   "19127": "No Rush Available",
   "19128": "No Rush Available",
   "19129": "$15 Rush Fee",
-  "19130": "$10 Rush Fee",
   "19131": "$15 Rush Fee",
-  "19132": "$10 Rush Fee",
-  "19133": "$10 Rush Fee",
   "19134": "$15 Rush Fee",
   "19135": "No Rush Available",
   "19136": "No Rush Available",
   "19137": "$15 Rush Fee",
   "19138": "No Rush Available",
-  "19139": "$10 Rush Fee",
   "19140": "$15 Rush Fee",
   "19141": "$15 Rush Fee",
   "19142": "$15 Rush Fee",
-  "19143": "$10 Rush Fee",
   "19144": "$15 Rush Fee",
-  "19145": "$10 Rush Fee",
-  "19146": "$10 Rush Fee",
-  "19147": "$10 Rush Fee",
-  "19148": "$10 Rush Fee",
   "19149": "No Rush Available",
   "19150": "No Rush Available",
   "19151": "$15 Rush Fee",
@@ -247,9 +227,6 @@ window.DM_getRushTextForZip = function(zip) {
   const z = ('' + zip).slice(0,5);
   return window.DM_RUSH_BY_ZIP[z] || null;
 };
-</script>
-
-
 function getColor(label){
   switch(label){
     case "Free Delivery": return cssVar('--free');
@@ -304,9 +281,7 @@ window.popupHTML = function popupHTML(opts){
   var zip = String(opts.zip || '');var label = opts.label || 'Free Delivery';
   var rushLabel = DM_getRushTextForZip(zip);
   var prepay = !!opts.prepay;
-  var neighborhood = opts.neighborhood || '';
-  var rushText = (opts.label === 'Shipping') ? null : DM_labelToRush(opts.label || '');
-  var color = opts.color || '#0ea5e9';
+  var neighborhood = opts.neighborhood || '';var color = opts.color || '#0ea5e9';
   var fee = (typeof opts.fee === 'number') ? opts.fee : null;
   var rush = (zip && zip !== '—' && label !== 'Shipping') ? DM_rushFor(fee) : null;
 
