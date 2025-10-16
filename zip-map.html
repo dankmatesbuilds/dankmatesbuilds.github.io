@@ -278,9 +278,8 @@ function getNeighborhoodForZip(zip){ return ZIP_NEIGHBORHOOD[String(zip)] || nul
 
 /* Minimal popup (neighborhood title, fee pill, prepay pill, zip chip) */
 window.popupHTML = function popupHTML(opts){
-  var zip = String(opts.zip || '');var label = opts.label || 'Free Delivery';
-  var rushLabel = DM_getRushTextForZip(zip);
-  var prepay = !!opts.prepay;
+  var zip = String(opts.zip || '');var label = opts.label || 'Free Delivery';var prepay = !!opts.prepay;
+  var rushLabel = (window.DM_getRushTextForZip ? DM_getRushTextForZip(zip) : (window.DM_RUSH_BY_ZIP ? (DM_RUSH_BY_ZIP[String(zip||'').slice(0,5)]||null) : null));
   var neighborhood = opts.neighborhood || '';var color = opts.color || '#0ea5e9';
   var fee = (typeof opts.fee === 'number') ? opts.fee : null;
   var rush = (zip && zip !== '—' && label !== 'Shipping') ? DM_rushFor(fee) : null;
@@ -322,6 +321,7 @@ var html = ''
           )
       + '</div>'
     + '<div class="dm-rowline">' + '<span class="dm-pill">Rush: ' + (rushLabel || '—') + '</span>' + '</div>'
+      + '<div class="dm-rowline">' + '<span class="dm-pill">Rush: ' + (rushLabel || '—') + '</span>' + '</div>'
       + '</div>'
   + '</div>';
 
