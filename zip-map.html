@@ -503,7 +503,7 @@ info.addListener('domready', () => {
   });
 
   // ---- Interactive legend (requested order) ----
-  const ORDER = ["Free Delivery", "$6 Delivery (NO RUSH)", "$6 Delivery ($14 rush)", "$10", "$10 Prepay", "$15", "$15 Prepay", "$20", "$20 Prepay"];
+  const ORDER = ["Free Delivery", "Free Delivery ($10 RUSH)", "$6 Delivery (NO RUSH)", "$6 Delivery ($14 rush)", "$10 Prepay", "$15", "$15 Prepay", "$20", "$20 Prepay"];
   const groupsByLabel = (() => {
     const m = new Map();
     ZIP_GROUPS.forEach(g => m.set(g.label, g));
