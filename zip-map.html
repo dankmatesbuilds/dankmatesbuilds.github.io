@@ -577,20 +577,6 @@ function DM_labelToRush(label){
     btn.appendChild(swatch);
     btn.appendChild(text);
 
-    if (g.prepay) {
-      const pill = document.createElement('span');
-      pill.textContent = 'Prepay';
-      pill.style.marginLeft = '6px';
-      pill.style.background = '#fff8e1';
-      pill.style.color = '#8b5e00';
-      pill.style.border = '1px solid #f5d565';
-      pill.style.borderRadius = '999px';
-      pill.style.padding = '0 6px';
-      pill.style.fontSize = '11px';
-      pill.style.fontWeight = '700';
-      btn.appendChild(pill);
-    }
-
     btn.addEventListener('click', () => {
       const clicked = btn.getAttribute('data-label');
       activeLegend = (activeLegend === clicked) ? null : clicked;
