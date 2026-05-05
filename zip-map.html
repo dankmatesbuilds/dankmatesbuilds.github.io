@@ -136,7 +136,7 @@
 </style>
 
     <script>
-/** GROUPS — label is the fee; prepay indicates prepayment zones */
+/** GROUPS — UPDATED: 4 service areas */
 const ZIP_GROUPS = [
   {
     label: "Free Delivery ($10 RUSH)",
@@ -146,134 +146,137 @@ const ZIP_GROUPS = [
     zips: [
       "19112","19148","19145","19147","19146","19106","19107","19102","19103",
       "19123","19130","19125","19122","19121","19132","19133","19104","19139",
-      "19143","19153","19142","19151","19131","19129","19140","19134"
+      "19143","19153","19142","19151","19131","19129","19140","19134","19137",
+      "19124","19120","19141","19144","19128","19127","19119","19118","19150",
+      "19138","19126","19111","19149","19135","19136","19152","19115","19116",
+      "19154"
     ]
   },
 
   {
-    label: "Free Delivery ($10 RUSH)",
+    label: "Free Delivery + Prepay ($10 RUSH)",
     fee: 0,
     prepay: true,
-    color: getColor("Free Delivery Prepay"),
-    zips: ["19023","19079","19032"]
-  },
-
-  {
-    label: "$6 Delivery ($14 RUSH)",
-    fee: 6,
-    prepay: false,
-    color: getColor("$6"),
-    zips: ["19137","19124","19120","19141","19144"]
-  },
-
-  {
-    label: "$6 Delivery ($14 RUSH)",
-    fee: 6,
-    prepay: true,
-    color: getColor("$6 Prepay"),
+    color: getColor("Free Delivery"),
     zips: [
-      "19029","19113","19074","19036","19018","19050",
-      "19082","19096","19066","19004"
+      "19023","19079","19032"
     ]
   },
 
   {
-    label: "$6 Delivery (NO RUSH)",
-    fee: 6,
-    prepay: false,
-    color: getColor("$6"),
-    zips: [
-      "19135","19149","19012","19126","19138","19119",
-      "19128","19127","19136","19152","19111","19150","19118"
-    ]
-  },
-
-  {
-    label: "$6 Delivery (NO RUSH)",
+    label: "$6 Delivery + Must Prepay ($14 RUSH)",
     fee: 6,
     prepay: true,
     color: getColor("$6 Prepay"),
     zips: [
-      "19078","19076","19033","19043","19070","19026","19083","19003",
-      "19072","19013","19015","19022","19094","19081","19064","19063","19041",
-      "19010","19085","19035","19428","19444","19038","19095","19027",
-      "19046","19115","19114","19116","19154","19020","19021","19007",
+      "19029","19113","19074","19036","19018","19082","19096","19066","19004"
+    ]
+  },
+
+  {
+    label: "$6 Delivery + Must Prepay (NO RUSH)",
+    fee: 6,
+    prepay: true,
+    color: getColor("$6 Prepay"),
+    zips: [
+      "19012","19078","19076","19033","19043","19070","19026","19083","19003",
+      "19072","19013","19015","19022","19094","19081","19064","19041","19010",
+      "19085","19035","19428","19444","19038","19095","19027","19046","19114",
+      "19020","19021","19007"
     ]
   }
 ];
 
-/* ==== HARD-CODED RUSH FEES BY ZIP (auto-generated) ==== */
+/* ==== HARD-CODED RUSH FEES BY ZIP (updated for 4 service areas) ==== */
 window.DM_RUSH_BY_ZIP = {
   "19003": "No Rush Available",
-  "19004": "$15 Rush Fee",
+  "19004": "$14 Rush Fee",
   "19007": "No Rush Available",
-  "19008": "No Rush Available",
   "19010": "No Rush Available",
-  "19012": "$15 PREPAY",
-  "19018": "$15 Rush Fee",
+  "19012": "No Rush Available",
+  "19013": "No Rush Available",
+  "19015": "No Rush Available",
+  "19018": "$14 Rush Fee",
   "19020": "No Rush Available",
   "19021": "No Rush Available",
   "19022": "No Rush Available",
-  "19023": "$15 Rush Fee",
+  "19023": "$10 Rush Fee",
   "19026": "No Rush Available",
   "19027": "No Rush Available",
-  "19029": "$15 Rush Fee",
-  "19032": "$15 Rush Fee",
+  "19029": "$14 Rush Fee",
+  "19032": "$10 Rush Fee",
   "19033": "No Rush Available",
   "19035": "No Rush Available",
-  "19036": "$15 Rush Fee",
+  "19036": "$14 Rush Fee",
   "19038": "No Rush Available",
   "19041": "No Rush Available",
   "19043": "No Rush Available",
   "19046": "No Rush Available",
-  "19050": "$15 Rush Fee",
   "19064": "No Rush Available",
-  "19066": "$15 Rush Fee",
+  "19066": "$14 Rush Fee",
   "19070": "No Rush Available",
   "19072": "No Rush Available",
-  "19074": "$15 Rush Fee",
+  "19074": "$14 Rush Fee",
   "19076": "No Rush Available",
   "19078": "No Rush Available",
-  "19079": "$15 Rush Fee",
+  "19079": "$10 Rush Fee",
   "19081": "No Rush Available",
-  "19082": "$15 Rush Fee",
+  "19082": "$14 Rush Fee",
   "19083": "No Rush Available",
   "19085": "No Rush Available",
   "19094": "No Rush Available",
   "19095": "No Rush Available",
-  "19096": "$15 Rush Fee",
-  "19111": "No Rush Available",
-  "19113": "$15 Rush Fee",
+  "19096": "$14 Rush Fee",
+  "19102": "$10 Rush Fee",
+  "19103": "$10 Rush Fee",
+  "19104": "$10 Rush Fee",
+  "19106": "$10 Rush Fee",
+  "19107": "$10 Rush Fee",
+  "19111": "$10 Rush Fee",
+  "19112": "$10 Rush Fee",
+  "19113": "$14 Rush Fee",
   "19114": "No Rush Available",
-  "19115": "No Rush Available",
-  "19116": "No Rush Available",
-  "19118": "No Rush Available",
-  "19119": "No Rush Available",
-  "19120": "$15 Rush Fee",
-  "19124": "$15 Rush Fee",
-  "19126": "No Rush Available",
-  "19127": "No Rush Available",
-  "19128": "No Rush Available",
-  "19129": "$15 Rush Fee",
-  "19131": "$15 Rush Fee",
-  "19134": "$15 Rush Fee",
-  "19135": "No Rush Available",
-  "19136": "No Rush Available",
-  "19137": "$15 Rush Fee",
-  "19138": "No Rush Available",
-  "19140": "$15 Rush Fee",
-  "19141": "$15 Rush Fee",
-  "19142": "$15 Rush Fee",
-  "19144": "$15 Rush Fee",
-  "19149": "No Rush Available",
-  "19150": "No Rush Available",
-  "19151": "$15 Rush Fee",
-  "19152": "No Rush Available",
-  "19153": "$15 Rush Fee",
-  "19154": "No Rush Available",
+  "19115": "$10 Rush Fee",
+  "19116": "$10 Rush Fee",
+  "19118": "$10 Rush Fee",
+  "19119": "$10 Rush Fee",
+  "19120": "$10 Rush Fee",
+  "19121": "$10 Rush Fee",
+  "19122": "$10 Rush Fee",
+  "19123": "$10 Rush Fee",
+  "19124": "$10 Rush Fee",
+  "19125": "$10 Rush Fee",
+  "19126": "$10 Rush Fee",
+  "19127": "$10 Rush Fee",
+  "19128": "$10 Rush Fee",
+  "19129": "$10 Rush Fee",
+  "19130": "$10 Rush Fee",
+  "19131": "$10 Rush Fee",
+  "19132": "$10 Rush Fee",
+  "19133": "$10 Rush Fee",
+  "19134": "$10 Rush Fee",
+  "19135": "$10 Rush Fee",
+  "19136": "$10 Rush Fee",
+  "19137": "$10 Rush Fee",
+  "19138": "$10 Rush Fee",
+  "19139": "$10 Rush Fee",
+  "19140": "$10 Rush Fee",
+  "19141": "$10 Rush Fee",
+  "19142": "$10 Rush Fee",
+  "19143": "$10 Rush Fee",
+  "19144": "$10 Rush Fee",
+  "19145": "$10 Rush Fee",
+  "19146": "$10 Rush Fee",
+  "19147": "$10 Rush Fee",
+  "19148": "$10 Rush Fee",
+  "19149": "$10 Rush Fee",
+  "19150": "$10 Rush Fee",
+  "19151": "$10 Rush Fee",
+  "19152": "$10 Rush Fee",
+  "19153": "$10 Rush Fee",
+  "19154": "$10 Rush Fee",
   "19428": "No Rush Available",
-  "19444": "No Rush Available",
-  "19063": "No Rush Available"
+  "19444": "No Rush Available"
 };
 
 window.DM_getRushTextForZip = function(zip) {
@@ -310,7 +313,7 @@ const ZIP_STYLE = (() => {
 function DM_rushFor(fee){
   if (fee == null || isNaN(fee)) return null;
   if (fee >= 15) return { text: "No Rush Available", type: "none" };
-  if (fee >= 6)  return { text: "$15 Rush Fee", type: "fee15" };
+  if (fee >= 6)  return { text: "$14 Rush Fee", type: "fee14" };
   return { text: "$10 Rush Fee", type: "fee10" }; // fee === 0 (Free Delivery)
 }
 ;
@@ -336,8 +339,6 @@ window.popupHTML = function popupHTML(opts){
   var rushLabel = (window.DM_getRushTextForZip ? DM_getRushTextForZip(zip) : (window.DM_RUSH_BY_ZIP ? (DM_RUSH_BY_ZIP[String(zip||'').slice(0,5)]||null) : null));
   var neighborhood = opts.neighborhood || '';var color = opts.color || '#0ea5e9';
   var fee = (typeof opts.fee === 'number') ? opts.fee : null;
-  var rush = (zip && zip !== '—' && label !== 'Shipping') ? DM_rushFor(fee) : null;
-
   var baseLabel = label.replace(/\s*Prepay$/, '');
   var title = neighborhood ? neighborhood : baseLabel;
   var leftPillText = (label === 'Free Delivery' || baseLabel === 'Free Delivery') ? 'Free Delivery' : baseLabel;
@@ -367,14 +368,6 @@ var html = ''
         + '</div>'
         + '<span class="dm-pill dm-zip">' + zip + '</span>'
       + '</div>'
-      + '<div class="dm-rowline">'
-        + (
-            rush
-              ? '<span class="dm-pill">Rush: ' + rush.text + '</span>'
-              : (rushText ? '<span class="dm-pill">Rush: ' + rushText + '</span>' : '<span class="dm-pill">Rush: —</span>')
-          )
-      + '</div>'
-    + '<div class="dm-rowline">' + '<span class="dm-pill">Rush: ' + (rushLabel || '—') + '</span>' + '</div>'
       + '<div class="dm-rowline">' + '<span class="dm-pill">Rush: ' + (rushLabel || '—') + '</span>' + '</div>'
       + '</div>'
   + '</div>';
@@ -506,8 +499,9 @@ info.addListener('domready', () => {
   // ---- Interactive legend (requested order) ----
   const ORDER = [
   "Free Delivery ($10 RUSH)",
-  "$6 Delivery ($14 RUSH)",
-  "$6 Delivery (NO RUSH)"
+  "Free Delivery + Prepay ($10 RUSH)",
+  "$6 Delivery + Must Prepay ($14 RUSH)",
+  "$6 Delivery + Must Prepay (NO RUSH)"
 ];
   const groupsByLabel = (() => {
     const m = new Map();
@@ -519,10 +513,9 @@ info.addListener('domready', () => {
 function DM_labelToRush(label){
   try{
     label = String(label || '').toLowerCase();
-    if (label.includes('$20')) return 'No Rush Available';
-    if (label.includes('$15')) return 'No Rush Available';
-    if (label.includes('$10')) return '$15 Rush Fee';
-    if (label.includes('$6'))  return '$15 Rush Fee';
+    if (label.includes('no rush')) return 'No Rush Available';
+    if (label.includes('$14')) return '$14 Rush Fee';
+    if (label.includes('$10')) return '$10 Rush Fee';
     if (label.includes('free')) return '$10 Rush Fee';
   }catch(e){}
   return null;
