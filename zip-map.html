@@ -119,19 +119,88 @@
       .dm-left{display:flex; align-items:center;}
       .dm-fee-dot{width:10px;height:10px;border-radius:999px;display:inline-block;margin-right:8px;}
       
-/* Remove Google InfoWindow chrome so only our custom .dm-close shows */
-.gm-style .gm-ui-hover-effect{ display:none !important; }           /* the default "X" */
-.gm-style .gm-style-iw-c{ padding:0 !important; background:transparent !important; box-shadow:none !important; border:none !important; }
-.gm-style .gm-style-iw-d{ overflow:visible !important; }            /* allow our rounded corners/shadow to show cleanly */
+/* --- Fix Google Maps popup clipping --- */
+.gm-style .gm-ui-hover-effect {
+  display: none !important;
+}
+
+.gm-style .gm-style-iw-c {
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.gm-style .gm-style-iw-d {
+  overflow: visible !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
 .gm-style .gm-style-iw-tc,
-.gm-style .gm-style-iw-tc::after{ display:none !important; }        /* hides the little pointer triangle */
+.gm-style .gm-style-iw-tc::after {
+  display: none !important;
+}
+
+/* --- Custom Dankmates popup sizing --- */
+.dm-popup {
+  width: max-content;
+  min-width: 360px;
+  max-width: min(440px, calc(100vw - 32px));
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.dm-head,
+.dm-body,
+.dm-rowline,
+.dm-left {
+  box-sizing: border-box;
+}
+
+.dm-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dm-rowline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dm-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.dm-pill {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dm-left .dm-pill {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.dm-zip,
+.dm-iconbtn {
+  flex: 0 0 auto;
+}
 
       
     
 /* v3 tweaks */
 .dm-pill.dm-pill--prepay{ padding-right:6px; }        /* make prepay flush with right edge of the pill */
 .dm-prepay{ margin-left:6px; }                         /* tighten space before the prepay badge */
-.dm-body .dm-rowline{ flex-wrap:nowrap; gap:10px; }    /* keep Customers & Active side-by-side */
+.dm-body .dm-rowline{ flex-wrap: wrap; gap:10px; }    /* keep Customers & Active side-by-side */
 
 </style>
 
